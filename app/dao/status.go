@@ -27,3 +27,14 @@ func (r *status) CreateStatus(ctx context.Context, status *object.Status) error 
 	}
 	return nil
 }
+
+func (r *status) FindByID(ctx context.Context, id uint64) (*object.Status, error) {
+	entity := new(object.Status)
+	println(id)
+	err := r.db.QueryRowxContext(ctx, "select * from status where id = ?", id).StructScan(entity)
+	if err != nil {
+		return nil, err
+	}
+
+	return entity, nil
+}
