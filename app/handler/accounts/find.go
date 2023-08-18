@@ -8,7 +8,7 @@ import (
 )
 
 // Handler request for `GET /v1/accounts/username`
-func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
+func (h *handler) FindUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	username := chi.URLParam(r, "username")
 
