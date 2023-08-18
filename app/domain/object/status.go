@@ -4,8 +4,11 @@ import ()
 
 type (
 	Status struct {
+		// The internal ID of the status
+		ID AccountID `json:"-"`
+
 		// The internal ID of the account
-		AccountId AccountID `json:"-"`
+		AccountId AccountID `json:"account_id" db:"account_id"`
 
 		// The content of the status
 		Content string `json:"content"`
