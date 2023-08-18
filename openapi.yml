@@ -148,6 +148,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Account"
+        "404":
+          description: User not found
   "/accounts/{username}/follow":
     post:
       security:
