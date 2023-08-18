@@ -11,8 +11,7 @@ import (
 
 // Request body for `POST /v1/statuses`
 type AddRequest struct {
-	AccountId int64
-	Content   string
+	Status string
 }
 
 // Handle request for `POST /v1/statuses`
@@ -31,8 +30,8 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	status := new(object.Status)
-	status.AccountId = req.AccountId
-	status.Content = req.Content
+	status.AccountId = account.ID
+	status.Content = req.Status
 
 	repo := h.app.Dao.Status()
 	if err := repo.CreateStatus(ctx, status); err != nil {
