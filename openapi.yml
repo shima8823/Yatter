@@ -353,6 +353,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Status"
+        "401":
+          description: Unauthorized
   "/statuses/{id}":
     get:
       tags:
