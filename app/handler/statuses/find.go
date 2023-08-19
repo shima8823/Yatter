@@ -29,7 +29,7 @@ func (h *handler) FindStatus(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		// httperror.NotFound(w, id)
+		httperror.NotFound(w, id)
 		return
 	}
 }
