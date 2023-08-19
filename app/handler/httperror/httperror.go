@@ -22,8 +22,8 @@ func InternalServerError(w http.ResponseWriter, err error) {
 	Error(w, http.StatusInternalServerError)
 }
 
-func NotFound(w http.ResponseWriter, username string) {
-	log.Printf("[NotFound] %+v", username)
+func NotFound(w http.ResponseWriter, value interface{}) {
+	log.Printf("[NotFound] %+v", value)
 
 	Error(w, http.StatusNotFound)
 }
