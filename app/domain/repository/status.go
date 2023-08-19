@@ -15,4 +15,7 @@ type Status interface {
 
 	// Delete status by id
 	DeleteByID(ctx context.Context, id uint64) error
+
+	// public timeline
+	PublicTimeline(ctx context.Context, only_media, max_id, since_id, limit *uint64) ([]*object.Status, error)
 }
