@@ -12,4 +12,7 @@ type Status interface {
 
 	// Find status by id
 	FindByID(ctx context.Context, id uint64) (*object.Status, error)
+
+	// Delete status by id
+	DeleteByID(ctx context.Context, id uint64) error
 }
