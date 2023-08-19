@@ -398,6 +398,8 @@ paths:
             application/json:
               schema:
                 type: object
+        "404":
+          description: Status not found
   /timelines/home:
     get:
       security:
