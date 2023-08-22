@@ -34,7 +34,6 @@ func setupTestDB(t *testing.T) *TestDBHelper {
 	}
 }
 
-// status dao test
 func TestCreateStatus(t *testing.T) {
 	helper := setupTestDB(t)
 	defer helper.db.Close()
@@ -104,5 +103,39 @@ func TestFindByID_Error(t *testing.T) {
 	}
 	if result != nil {
 		t.Fatalf("expected: %v, got: %v", nil, result)
+	}
+}
+
+func TestDeleteByID(t *testing.T) {
+	helper := setupTestDB(t)
+
+	expectedStatus := &object.Status{ID: 1, AccountId: 1, Content: "test content"}
+	helper.mock.ExpectExec("delete from status where id = ?").
+		WithArgs(expectedStatus.ID).
+		WillReturnResult(sqlmock.NewResult(-1, 1))
+
+	ctx := context.Background()
+	if err := helper.repo.DeleteByID(ctx, expectedStatus.ID); err != nil {
+		t.Fatalf("failed to delete status: %v", err)
+	}
+	if err := helper.mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestDeleteByID_Error(t *testing.T) {
+	helper := setupTestDB(t)
+
+	expectedStatus := &object.Status{ID: 1, AccountId: 1, Content: "test content"}
+	helper.mock.ExpectExec("delete from status where id = ?").
+		WithArgs(expectedStatus.ID).
+		WillReturnError(sql.ErrNoRows)
+
+	ctx := context.Background()
+	if err := helper.repo.DeleteByID(ctx, expectedStatus.ID); err == nil {
+		t.Fatalf("expected error, but got nil")
+	}
+	if err := helper.mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("there were unfulfilled expectations: %s", err)
 	}
 }
