@@ -105,3 +105,47 @@ func TestFindByUsername_DBError(t *testing.T) {
 		t.Fatalf("expected: %v, got: %v", nil, result)
 	}
 }
+
+func TestCreateUser(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to open stub database connection: %v", err)
+	}
+	defer db.Close()
+
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	r := dao.NewAccount(sqlxDB)
+
+	newUser := &object.Account{Username: "newuser", PasswordHash: "newhashedpassword"}
+	mock.ExpectExec("insert into account \\(username, password_hash\\) values \\(\\?, \\?\\)").
+		WithArgs(newUser.Username, newUser.PasswordHash).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	ctx := context.Background()
+	err = r.CreateUser(ctx, newUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCreateUser_DBError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to open stub database connection: %v", err)
+	}
+	defer db.Close()
+
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	r := dao.NewAccount(sqlxDB)
+
+	newUser := &object.Account{Username: "newuser", PasswordHash: "newhashedpassword"}
+	mock.ExpectExec("insert into account \\(username, password_hash\\) values \\(\\?, \\?\\)").
+		WithArgs(newUser.Username, newUser.PasswordHash).
+		WillReturnError(sql.ErrConnDone)
+
+	ctx := context.Background()
+	err = r.CreateUser(ctx, newUser)
+	if err == nil {
+		t.Fatal(err)
+	}
+}
