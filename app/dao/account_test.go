@@ -122,8 +122,10 @@ func TestCreateUser(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	ctx := context.Background()
-	err = r.CreateUser(ctx, newUser)
-	if err != nil {
+	if err := r.CreateUser(ctx, newUser); err != nil {
+		t.Fatal(err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -144,8 +146,10 @@ func TestCreateUser_DBError(t *testing.T) {
 		WillReturnError(sql.ErrConnDone)
 
 	ctx := context.Background()
-	err = r.CreateUser(ctx, newUser)
-	if err == nil {
+	if err := r.CreateUser(ctx, newUser); err == nil {
+		t.Fatal(err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatal(err)
 	}
 }
