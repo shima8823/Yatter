@@ -8,7 +8,7 @@ import (
 )
 
 type (
-	AccountID    = int64
+	AccountID    = uint64
 	PasswordHash = string
 
 	// Account account
