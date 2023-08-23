@@ -3,6 +3,7 @@ package dao_test
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"testing"
 	"yatter-backend-go/app/dao"
 	"yatter-backend-go/app/domain/object"
@@ -138,4 +139,99 @@ func TestDeleteByID_Error(t *testing.T) {
 	if err := helper.mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("there were unfulfilled expectations: %s", err)
 	}
+}
+
+func TestPublicTimeline(t *testing.T) {
+	helper := setupTestDB(t)
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		sinceID  *uint64
+		maxID    *uint64
+		limit    *uint64
+		expected string
+	}{
+		{"Simple Timeline", nil, nil, nil, "SELECT \\* FROM status ORDER BY create_at DESC"},
+		{"Since ID", pointerToUint64(5), nil, nil, "SELECT \\* FROM status WHERE id >= \\? ORDER BY create_at DESC"},
+		{"Max ID", nil, pointerToUint64(10), nil, "SELECT \\* FROM status WHERE id <= \\? ORDER BY create_at DESC"},
+		{"Limited", nil, nil, pointerToUint64(3), "SELECT \\* FROM status ORDER BY create_at DESC LIMIT \\?"},
+		// Add more scenarios as needed
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectedArgs := extractArguments(tt.sinceID, tt.maxID, tt.limit)
+			rows := sqlmock.NewRows([]string{"id", "account_id", "content"})
+
+			args := make([]driver.Value, len(expectedArgs))
+			for i, v := range expectedArgs {
+				args[i] = v.(driver.Value)
+			}
+			helper.mock.ExpectQuery(tt.expected).WithArgs(args...).WillReturnRows(rows)
+
+			res, err := helper.repo.PublicTimeline(ctx, nil, tt.maxID, tt.sinceID, tt.limit)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if err := helper.mock.ExpectationsWereMet(); err != nil {
+				t.Fatalf("there were unfulfilled expectations: %s", err)
+			}
+			if res != nil {
+				t.Fatalf("expected: %v, got: %v", nil, res)
+			}
+		})
+	}
+}
+
+func TestPublicTimeline_Error(t *testing.T) {
+	helper := setupTestDB(t)
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		sinceID  *uint64
+		maxID    *uint64
+		limit    *uint64
+		expected string
+	}{
+		{"Simple Timeline", nil, nil, nil, "SELECT \\* FROM status ORDER BY create_at DESC"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectedArgs := extractArguments(tt.sinceID, tt.maxID, tt.limit)
+
+			args := make([]driver.Value, len(expectedArgs))
+			for i, v := range expectedArgs {
+				args[i] = v.(driver.Value)
+			}
+			helper.mock.ExpectQuery(tt.expected).WithArgs(args...).WillReturnError(sql.ErrNoRows)
+
+			if _, err := helper.repo.PublicTimeline(ctx, nil, tt.maxID, tt.sinceID, tt.limit); err == nil {
+				t.Fatalf("expected error, but got nil")
+			}
+			if err := helper.mock.ExpectationsWereMet(); err != nil {
+				t.Fatalf("there were unfulfilled expectations: %s", err)
+			}
+		})
+	}
+}
+
+func pointerToUint64(v uint64) *uint64 {
+	return &v
+}
+
+func extractArguments(sinceID, maxID, limit *uint64) []interface{} {
+	var args []interface{}
+	if sinceID != nil {
+		args = append(args, *sinceID)
+	}
+	if maxID != nil {
+		args = append(args, *maxID)
+	}
+	if limit != nil {
+		args = append(args, *limit)
+	}
+	return args
 }
