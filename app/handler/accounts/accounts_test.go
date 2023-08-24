@@ -20,11 +20,7 @@ import (
 
 func TestCreateHandler(t *testing.T) {
 	db, mock := dao.NewMockDB()
-	h := &handler{
-		app: &app.App{
-			Dao: dao.NewWithDB(sqlx.NewDb(db, "sqlmock")),
-		},
-	}
+	h := newMockHandler(db)
 	defer db.Close()
 
 	t.Run("successfully create account", func(t *testing.T) {
@@ -69,13 +65,8 @@ func TestCreateHandler(t *testing.T) {
 }
 
 func TestFindUserHandler(t *testing.T) {
-	// mockのsetup
 	db, mock := dao.NewMockDB()
-	h := &handler{
-		app: &app.App{
-			Dao: dao.NewWithDB(sqlx.NewDb(db, "sqlmock")),
-		},
-	}
+	h := newMockHandler(db)
 	defer db.Close()
 
 	prepareRequest := func(username string) (*httptest.ResponseRecorder, *http.Request) {
@@ -130,6 +121,14 @@ func TestFindUserHandler(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, w.Code, "status code should be 404")
 	})
 
+}
+
+func newMockHandler(db *sql.DB) *handler {
+	return &handler{
+		app: &app.App{
+			Dao: dao.NewWithDB(sqlx.NewDb(db, "sqlmock")),
+		},
+	}
 }
 
 func setChiURLParam(r *http.Request, key, value string) *http.Request {
