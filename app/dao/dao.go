@@ -1,10 +1,12 @@
 package dao
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"yatter-backend-go/app/domain/repository"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -34,6 +36,18 @@ func New(config DBConfig) (Dao, error) {
 	}
 
 	return &dao{db: db}, nil
+}
+
+func NewMockDB() (*sql.DB, sqlmock.Sqlmock) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		panic(err)
+	}
+	return db, mock
+}
+
+func NewWithDB(db *sqlx.DB) Dao {
+	return &dao{db: db}
 }
 
 func (d *dao) Account() repository.Account {
