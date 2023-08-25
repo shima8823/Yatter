@@ -33,7 +33,7 @@ func TestCreateHandler(t *testing.T) {
 		wantCode int
 	}{
 		{
-			name: "successfully create account",
+			name: "successfully create status",
 			body: &AddRequest{
 				Status: "test post",
 			},
@@ -117,7 +117,7 @@ func TestFindHandler(t *testing.T) {
 		wantCode int
 	}{
 		{
-			name: "successfully find account",
+			name: "successfully find status",
 			id:   "1",
 			mockFunc: func() {
 				mock.ExpectQuery("select \\* from status where id = \\?").
@@ -187,7 +187,7 @@ func TestDeleteHandler(t *testing.T) {
 		wantCode int
 	}{
 		{
-			name: "successfully delete account",
+			name: "successfully delete status",
 			id:   "1",
 			mockFunc: func() {
 				mock.ExpectQuery("select \\* from status where id = \\?").
