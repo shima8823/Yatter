@@ -175,6 +175,70 @@ func TestFindHandler(t *testing.T) {
 	}
 }
 
+func TestDeleteHandler(t *testing.T) {
+	db, mock := dao.NewMockDB()
+	h := newMockHandler(db)
+	defer db.Close()
+
+	tests := []struct {
+		name     string
+		id       string
+		mockFunc func()
+		wantCode int
+	}{
+		{
+			name: "successfully delete account",
+			id:   "1",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from status where id = \\?").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "account_id", "content"}))
+				mock.ExpectExec("delete from status where id = \\?").
+					WithArgs(1).
+					WillReturnResult(sqlmock.NewResult(-1, 1))
+			},
+			wantCode: http.StatusOK,
+		},
+		{
+			name: "not found",
+			id:   "42",
+			mockFunc: func() {
+				mock.ExpectExec("delete from status where id = \\?").
+					WithArgs(42).
+					WillReturnError(sql.ErrNoRows)
+			},
+			wantCode: http.StatusNotFound,
+		},
+		{
+			name: "bad request on param",
+			id:   "invalid",
+			mockFunc: func() {
+				mock.ExpectExec("delete from status where id = \\?").
+					WithArgs(1).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			wantCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			r, err := http.NewRequest(http.MethodDelete, "/v1/status/"+tt.id, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r = setChiURLParam(r, "id", tt.id)
+			if tt.mockFunc != nil {
+				tt.mockFunc()
+			}
+			h.Delete(w, r)
+
+			assert.Equal(t, tt.wantCode, w.Code)
+		})
+	}
+}
+
 func newMockHandler(db *sql.DB) *handler {
 	return &handler{
 		app: &app.App{
