@@ -23,74 +23,84 @@ func TestCreateHandler(t *testing.T) {
 	h := newMockHandler(db)
 	defer db.Close()
 
-	t.Run("successfully create account", func(t *testing.T) {
-		body := &AddRequest{
-			Status: "test post",
-		}
-		username := "testuser"
+	tests := []struct {
+		name     string
+		body     *AddRequest
+		username string
+		mockFunc func()
+		wantCode int
+	}{
+		{
+			name: "successfully create account",
+			body: &AddRequest{
+				Status: "test post",
+			},
+			username: "testuser",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from account where username = \\?").
+					WithArgs("testuser").
+					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "testuser"))
+				mock.ExpectExec("insert into status \\(account_id, content\\) values \\(\\?, \\?\\)").
+					WithArgs(1, "test post").
+					WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			wantCode: http.StatusOK,
+		},
+		{
+			name:     "unauthorized",
+			body:     &AddRequest{Status: "test post"},
+			wantCode: http.StatusUnauthorized,
+		},
+		{
+			name:     "bad request on malformed JSON",
+			username: "testuser",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from account where username = \\?").
+					WithArgs("testuser").
+					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "testuser"))
+			},
+			wantCode: http.StatusBadRequest,
+		},
+	}
 
-		bodyBytes, err := json.Marshal(body)
-		if err != nil {
-			t.Fatal(err)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var bodyBytes []byte
+			if tt.body != nil {
+				var err error
+				bodyBytes, err = json.Marshal(tt.body)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
 
-		w := httptest.NewRecorder()
-		r, err := http.NewRequest(http.MethodPost, "/v1/statuses", bytes.NewReader(bodyBytes))
-		if err != nil {
-			t.Fatal(err)
-		}
-		r.Header.Set("Authentication", "username "+username)
+			w := httptest.NewRecorder()
+			r, err := http.NewRequest(http.MethodPost, "/v1/statuses", bytes.NewReader(bodyBytes))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tt.username != "" {
+				r.Header.Set("Authentication", "username "+tt.username)
+			}
+			if tt.mockFunc != nil {
+				tt.mockFunc()
+			}
 
-		// middlewareのFindbyUsernameのmock
-		mock.ExpectQuery("select \\* from account where username = \\?").
-			WithArgs("testuser").
-			WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "testuser"))
-		// createStatusのmock
-		mock.ExpectExec("insert into status \\(account_id, content\\) values \\(\\?, \\?\\)").
-			WithArgs(1, body.Status).
-			WillReturnResult(sqlmock.NewResult(1, 1))
+			middleware := auth.Middleware(h.app)
+			handlerMiddleware := middleware(http.HandlerFunc(h.Create))
+			handlerMiddleware.ServeHTTP(w, r)
 
-		middleware := auth.Middleware(h.app)
-		handlerMiddleware := middleware(http.HandlerFunc(h.Create))
-		handlerMiddleware.ServeHTTP(w, r)
+			assert.Equal(t, tt.wantCode, w.Code)
 
-		assert.Equal(t, http.StatusOK, w.Code, "status code should be 200")
-		var resp object.Status
-		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-			t.Fatal(err)
-		}
-		assert.Equal(t, body.Status, resp.Content, "status should be equal")
-	})
-	t.Run("unauthorized", func(t *testing.T) {
-		body := &AddRequest{
-			Status: "test post",
-		}
-		bodyBytes, err := json.Marshal(body)
-		if err != nil {
-			t.Fatal(err)
-		}
-		req, _ := http.NewRequest(http.MethodPost, "/v1/statuses", bytes.NewReader(bodyBytes))
-		respRecorder := httptest.NewRecorder()
-
-		h.Create(respRecorder, req)
-
-		assert.Equal(t, http.StatusUnauthorized, respRecorder.Code)
-	})
-	t.Run("bad request on malformed JSON", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		r, err := http.NewRequest(http.MethodPost, "/v1/statuses", bytes.NewReader([]byte("{malformed")))
-		if err != nil {
-			t.Fatal(err)
-		}
-		r.Header.Set("Authentication", "username "+"testuser")
-		mock.ExpectQuery("select \\* from account where username = \\?").
-			WithArgs("testuser").
-			WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "testuser"))
-		middleware := auth.Middleware(h.app)
-		handlerMiddleware := middleware(http.HandlerFunc(h.Create))
-		handlerMiddleware.ServeHTTP(w, r)
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-	})
+			if tt.wantCode == http.StatusOK {
+				var resp object.Status
+				if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+					t.Fatal(err)
+				}
+				assert.Equal(t, tt.body.Status, resp.Content)
+			}
+		})
+	}
 }
 
 func newMockHandler(db *sql.DB) *handler {
