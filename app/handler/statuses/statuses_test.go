@@ -2,6 +2,7 @@ package statuses
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"yatter-backend-go/app/handler/auth"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/go-chi/chi"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
@@ -103,10 +105,86 @@ func TestCreateHandler(t *testing.T) {
 	}
 }
 
+func TestFindHandler(t *testing.T) {
+	db, mock := dao.NewMockDB()
+	h := newMockHandler(db)
+	defer db.Close()
+
+	tests := []struct {
+		name     string
+		id       string
+		mockFunc func()
+		wantCode int
+	}{
+		{
+			name: "successfully find account",
+			id:   "1",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from status where id = \\?").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "account_id", "content"}).
+						AddRow(1, 1, "test post"))
+			},
+			wantCode: http.StatusOK,
+		},
+		{
+			name: "not found",
+			id:   "42",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from status where id = \\?").
+					WithArgs(42).
+					WillReturnError(sql.ErrNoRows)
+			},
+			wantCode: http.StatusNotFound,
+		},
+		{
+			name: "bad request on param",
+			id:   "invalid",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from status where id = \\?").
+					WithArgs(1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "account_id", "content"}).
+						AddRow(1, 1, "test post"))
+			},
+			wantCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			r, err := http.NewRequest(http.MethodGet, "/v1/status/"+tt.id, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r = setChiURLParam(r, "id", tt.id)
+			if tt.mockFunc != nil {
+				tt.mockFunc()
+			}
+			h.FindStatus(w, r)
+
+			assert.Equal(t, tt.wantCode, w.Code)
+			if tt.wantCode == http.StatusOK {
+				var resp object.Status
+				if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+					t.Fatal(err)
+				}
+				assert.NotEmpty(t, resp)
+			}
+		})
+	}
+}
+
 func newMockHandler(db *sql.DB) *handler {
 	return &handler{
 		app: &app.App{
 			Dao: dao.NewWithDB(sqlx.NewDb(db, "sqlmock")),
 		},
 	}
+}
+
+func setChiURLParam(r *http.Request, key, value string) *http.Request {
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add(key, value)
+	return r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 }
