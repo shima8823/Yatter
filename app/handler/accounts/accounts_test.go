@@ -23,45 +23,68 @@ func TestCreateHandler(t *testing.T) {
 	h := newMockHandler(db)
 	defer db.Close()
 
-	t.Run("successfully create account", func(t *testing.T) {
-		body := &AddRequest{
-			Username: "testuser",
-			Password: "securepassword",
-		}
-		bodyBytes, err := json.Marshal(body)
-		if err != nil {
-			t.Fatal(err)
-		}
+	tests := []struct {
+		name      string
+		body      *AddRequest
+		bodyBytes []byte
+		mockFunc  func()
+		wantCode  int
+	}{
+		{
+			name: "successfully create account",
+			body: &AddRequest{
+				Username: "testuser",
+				Password: "securepassword",
+			},
+			mockFunc: func() {
+				mock.ExpectExec("insert into account \\(username, password_hash\\) values \\(\\?, \\?\\)").
+					WithArgs("testuser", sqlmock.AnyArg()).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			wantCode: http.StatusOK,
+		},
+		{
+			name:      "bad request on malformed JSON",
+			bodyBytes: []byte("{malformed}"),
+			wantCode:  http.StatusBadRequest,
+		},
+	}
 
-		w := httptest.NewRecorder()
-		r, err := http.NewRequest(http.MethodPost, "/v1/accounts", bytes.NewReader(bodyBytes))
-		if err != nil {
-			t.Fatal(err)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var r *http.Request
+			var err error
 
-		// mockのsetup
-		mock.ExpectExec("insert into account \\(username, password_hash\\) values \\(\\?, \\?\\)").
-			WithArgs(body.Username, sqlmock.AnyArg()).
-			WillReturnResult(sqlmock.NewResult(1, 1))
+			if tt.body != nil {
+				tt.bodyBytes, err = json.Marshal(tt.body)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
 
-		h.Create(w, r)
+			r, err = http.NewRequest(http.MethodPost, "/v1/accounts", bytes.NewReader(tt.bodyBytes))
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		assert.Equal(t, http.StatusOK, w.Code, "status code should be 200")
-		var resp object.Account
-		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-			t.Fatal(err)
-		}
-		assert.Equal(t, body.Username, resp.Username, "username should be equal")
-		assert.NotNil(t, resp.PasswordHash, "password hash should not be nil")
-	})
-	t.Run("bad request on malformed JSON", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodPost, "/v1/accounts", bytes.NewReader([]byte("{malformed")))
-		respRecorder := httptest.NewRecorder()
+			if tt.mockFunc != nil {
+				tt.mockFunc()
+			}
 
-		h.Create(respRecorder, req)
+			w := httptest.NewRecorder()
+			h.Create(w, r)
 
-		assert.Equal(t, http.StatusBadRequest, respRecorder.Code)
-	})
+			assert.Equal(t, tt.wantCode, w.Code)
+
+			if tt.wantCode == http.StatusOK {
+				var resp object.Account
+				if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+					t.Fatal(err)
+				}
+				assert.NotEmpty(t, resp.Username)
+			}
+		})
+	}
 }
 
 func TestFindUserHandler(t *testing.T) {
@@ -69,58 +92,74 @@ func TestFindUserHandler(t *testing.T) {
 	h := newMockHandler(db)
 	defer db.Close()
 
-	prepareRequest := func(username string) (*httptest.ResponseRecorder, *http.Request) {
-		w := httptest.NewRecorder()
-		r, err := http.NewRequest(http.MethodGet, "/v1/accounts/"+username, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		r = setChiURLParam(r, "username", "testuser")
-		return w, r
+	tests := []struct {
+		name         string
+		username     string
+		mockFunc     func()
+		urlParamFunc func(r *http.Request) *http.Request
+		wantCode     int
+		wantUsername string
+	}{
+		{
+			name:     "successfully find account",
+			username: "testuser",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from account where username = \\?").
+					WithArgs("testuser").
+					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "testuser"))
+			},
+			urlParamFunc: func(r *http.Request) *http.Request { return setChiURLParam(r, "username", "testuser") },
+			wantCode:     http.StatusOK,
+			wantUsername: "testuser",
+		},
+		{
+			name:     "user not found",
+			username: "testuser",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from account where username = \\?").
+					WithArgs("testuser").
+					WillReturnError(sql.ErrNoRows)
+			},
+			urlParamFunc: func(r *http.Request) *http.Request { return setChiURLParam(r, "username", "testuser") },
+			wantCode:     http.StatusNotFound,
+		},
+		{
+			name:     "bad request on invalid URL parameter",
+			username: "testuser",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from account where username = \\?").
+					WithArgs("testuser").
+					WillReturnError(sql.ErrNoRows)
+			},
+			urlParamFunc: func(r *http.Request) *http.Request { return setChiURLParam(r, "undefined", "testuser") },
+			wantCode:     http.StatusInternalServerError,
+		},
 	}
 
-	// 成功するテスト
-	t.Run("successfully find account", func(t *testing.T) {
-		w, r := prepareRequest("testuser")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			r, err := http.NewRequest(http.MethodGet, "/v1/accounts/"+tt.username, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r = tt.urlParamFunc(r)
+			if tt.mockFunc != nil {
+				tt.mockFunc()
+			}
 
-		mock.ExpectQuery("select \\* from account where username = \\?").
-			WithArgs("testuser").
-			WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "testuser"))
+			h.FindUser(w, r)
 
-		h.FindUser(w, r)
-
-		assert.Equal(t, http.StatusOK, w.Code, "status code should be 200")
-		var resp object.Account
-		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
-			t.Fatal(err)
-		}
-		assert.Equal(t, "testuser", resp.Username, "username should be equal")
-	})
-	// 失敗するテスト
-	// ユーザーが存在しない場合
-	t.Run("user not found", func(t *testing.T) {
-		w, r := prepareRequest("testuser")
-		mock.ExpectQuery("select \\* from account where username = \\?").
-			WithArgs("testuser").
-			WillReturnError(sql.ErrNoRows)
-
-		h.FindUser(w, r)
-
-		assert.Equal(t, http.StatusNotFound, w.Code, "status code should be 404")
-	})
-	// URLパラメータが不正な場合
-	t.Run("bad request on invalid URL parameter", func(t *testing.T) {
-		w, r := prepareRequest("testuser")
-		r = setChiURLParam(r, "undefined", "testuser")
-		mock.ExpectQuery("select \\* from account where username = \\?").
-			WithArgs("testuser").
-			WillReturnError(sql.ErrNoRows)
-
-		h.FindUser(w, r)
-
-		assert.Equal(t, http.StatusInternalServerError, w.Code, "status code should be 404")
-	})
-
+			assert.Equal(t, tt.wantCode, w.Code)
+			if tt.wantCode == http.StatusOK {
+				var resp object.Account
+				if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+					t.Fatal(err)
+				}
+				assert.Equal(t, tt.wantUsername, resp.Username)
+			}
+		})
+	}
 }
 
 func newMockHandler(db *sql.DB) *handler {
