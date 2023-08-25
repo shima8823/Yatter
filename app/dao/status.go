@@ -2,6 +2,8 @@ package dao
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"strings"
 	"yatter-backend-go/app/domain/object"
 	"yatter-backend-go/app/domain/repository"
@@ -31,9 +33,11 @@ func (r *status) CreateStatus(ctx context.Context, status *object.Status) error 
 
 func (r *status) FindByID(ctx context.Context, id uint64) (*object.Status, error) {
 	entity := new(object.Status)
-	println(id)
 	err := r.db.QueryRowxContext(ctx, "select * from status where id = ?", id).StructScan(entity)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
