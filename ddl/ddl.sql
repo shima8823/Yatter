@@ -19,3 +19,14 @@ CREATE TABLE `status` (
   INDEX `idx_account_id` (`account_id`),
   CONSTRAINT `fk_status_account_id` FOREIGN KEY (`account_id`) REFERENCES  `account` (`id`)
 );
+
+CREATE TABLE relationships (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `following_id` bigint(20) NOT NULL,
+  `follower_id` bigint(20) NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY (`follower_id`, `followed_id`),
+  FOREIGN KEY (`follower_id`) REFERENCES `account` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`followed_id`) REFERENCES `account` (`id`) ON DELETE CASCADE
+);
