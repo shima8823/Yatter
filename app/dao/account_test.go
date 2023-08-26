@@ -2,154 +2,66 @@ package dao_test
 
 import (
 	"context"
-	"database/sql"
 	"testing"
-	"yatter-backend-go/app/dao"
 	"yatter-backend-go/app/domain/object"
+	"yatter-backend-go/app/domain/repository"
 
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/assert"
 )
 
+func setupAccountDAO(t *testing.T) (repository.Account, func()) {
+	dao := setupDAO(t)
+	dao.InitAll()
+	accountRepo := dao.Account()
+
+	cleanup := func() {
+		dao.InitAll()
+		dao.Close()
+	}
+
+	return accountRepo, cleanup
+}
+
 // account dao test
-func TestFindByUsername(t *testing.T) {
-	// データベースとモックを作成
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("failed to open stub database connection: %v", err)
-	}
-	defer db.Close()
-
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
-	r := dao.NewAccount(sqlxDB)
-
-	// Mock setup
-	expectedUser := &object.Account{Username: "testuser", PasswordHash: "hashedpassword"}
-	mock.ExpectQuery("select \\* from account where username = ?").
-		WithArgs(expectedUser.Username).
-		WillReturnRows(sqlmock.NewRows([]string{"username", "password_hash"}).
-			AddRow(expectedUser.Username, expectedUser.PasswordHash))
-
-	ctx := context.Background()
-	result, err := r.FindByUsername(ctx, expectedUser.Username)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// mockのqueryが実行されたか確認
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatal(err)
-	}
-
-	// 結果の確認
-	if result.Username != expectedUser.Username {
-		t.Fatalf("expected: %v, got: %v", expectedUser.Username, result.Username)
-	}
-}
-
-func TestFindByUsername_NotFound(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("failed to open stub database connection: %v", err)
-	}
-	defer db.Close()
-
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
-	r := dao.NewAccount(sqlxDB)
-
-	mock.ExpectQuery("select \\* from account where username = ?").
-		WithArgs("nonexistuser").
-		WillReturnError(sql.ErrNoRows)
-
-	ctx := context.Background()
-	result, err := r.FindByUsername(ctx, "nonexistuser")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatal(err)
-	}
-
-	if result != nil {
-		t.Fatalf("expected: %v, got: %v", nil, result)
-	}
-}
-
-func TestFindByUsername_DBError(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("failed to open stub database connection: %v", err)
-	}
-	defer db.Close()
-
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
-	r := dao.NewAccount(sqlxDB)
-
-	expectedUser := &object.Account{Username: "testuser", PasswordHash: "hashedpassword"}
-	mock.ExpectQuery("select \\* from account where username = ?").
-		WithArgs(expectedUser.Username).
-		WillReturnError(sql.ErrConnDone)
-
-	ctx := context.Background()
-	result, err := r.FindByUsername(ctx, expectedUser.Username)
-	if err == nil {
-		t.Fatal(err)
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatal(err)
-	}
-
-	if result != nil {
-		t.Fatalf("expected: %v, got: %v", nil, result)
-	}
-}
-
 func TestCreateUser(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("failed to open stub database connection: %v", err)
-	}
-	defer db.Close()
-
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
-	r := dao.NewAccount(sqlxDB)
-
-	newUser := &object.Account{Username: "newuser", PasswordHash: "newhashedpassword"}
-	mock.ExpectExec("insert into account \\(username, password_hash\\) values \\(\\?, \\?\\)").
-		WithArgs(newUser.Username, newUser.PasswordHash).
-		WillReturnResult(sqlmock.NewResult(1, 1))
-
+	repo, cleanup := setupAccountDAO(t)
+	defer cleanup()
 	ctx := context.Background()
-	if err := r.CreateUser(ctx, newUser); err != nil {
-		t.Fatal(err)
-	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatal(err)
-	}
+
+	t.Run("Success", func(t *testing.T) {
+		err := repo.CreateUser(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
+		assert.NoError(t, err)
+
+		createdAccount, err := repo.FindByUsername(ctx, "testuser")
+		assert.NoError(t, err)
+		assert.NotNil(t, createdAccount)
+		assert.Equal(t, "testuser", createdAccount.Username)
+	})
+
+	t.Run("duplicate username", func(t *testing.T) {
+		err := repo.CreateUser(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
+		assert.Error(t, err)
+	})
 }
 
-func TestCreateUser_DBError(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("failed to open stub database connection: %v", err)
-	}
-	defer db.Close()
-
-	sqlxDB := sqlx.NewDb(db, "sqlmock")
-	r := dao.NewAccount(sqlxDB)
-
-	newUser := &object.Account{Username: "newuser", PasswordHash: "newhashedpassword"}
-	mock.ExpectExec("insert into account \\(username, password_hash\\) values \\(\\?, \\?\\)").
-		WithArgs(newUser.Username, newUser.PasswordHash).
-		WillReturnError(sql.ErrConnDone)
-
+func TestFindByUsername(t *testing.T) {
+	repo, cleanup := setupAccountDAO(t)
+	defer cleanup()
 	ctx := context.Background()
-	if err := r.CreateUser(ctx, newUser); err == nil {
-		t.Fatal(err)
-	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatal(err)
-	}
+
+	err := repo.CreateUser(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
+	assert.NoError(t, err)
+
+	t.Run("Found", func(t *testing.T) {
+		account, err := repo.FindByUsername(ctx, "testuser")
+		assert.NoError(t, err)
+		assert.NotNil(t, account)
+		assert.Equal(t, "testuser", account.Username)
+	})
+
+	t.Run("Not found", func(t *testing.T) {
+		account, err := repo.FindByUsername(ctx, "nonexistentuser")
+		assert.NoError(t, err)
+		assert.Nil(t, account)
+	})
 }
