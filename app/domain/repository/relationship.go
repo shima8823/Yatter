@@ -27,4 +27,7 @@ type Relationship interface {
 	// CountFollowing(ctx context.Context, accountID object.AccountID) (int, error)
 	// // アカウントのfollower数を取得
 	// CountFollower(ctx context.Context, accountID object.AccountID) (int, error)
+
+	// utils
+	FindAccountByUsername(ctx context.Context, username string) (*object.Account, error)
 }
