@@ -17,6 +17,8 @@ type (
 		Account() repository.Account
 		// Get status repository
 		Status() repository.Status
+		// Get relationship repository
+		Relationship() repository.Relationship
 
 		// Clear all data in DB
 		InitAll() error
@@ -59,6 +61,10 @@ func (d *dao) Account() repository.Account {
 
 func (d *dao) Status() repository.Status {
 	return NewStatus(d.db)
+}
+
+func (d *dao) Relationship() repository.Relationship {
+	return NewRelationship(d.db)
 }
 
 // 外部キー制約を無効化して全テーブルをクリアする
