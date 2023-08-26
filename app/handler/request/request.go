@@ -23,3 +23,13 @@ func IDOf(r *http.Request) (int64, error) {
 
 	return id, nil
 }
+
+// Read path parameter `username`
+func UsernameOf(r *http.Request) (string, error) {
+	username := chi.URLParam(r, "username")
+
+	if username == "" {
+		return "", errors.Errorf("username was not presence")
+	}
+	return username, nil
+}
