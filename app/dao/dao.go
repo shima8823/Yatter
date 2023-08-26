@@ -20,6 +20,9 @@ type (
 
 		// Clear all data in DB
 		InitAll() error
+
+		// Close DB connection for testing
+		Close() error
 	}
 
 	// Implementation for DAO
@@ -84,4 +87,8 @@ func (d *dao) InitAll() error {
 func (d *dao) exec(query string, args ...interface{}) error {
 	_, err := d.db.Exec(query, args...)
 	return err
+}
+
+func (d *dao) Close() error {
+	return d.db.Close()
 }
