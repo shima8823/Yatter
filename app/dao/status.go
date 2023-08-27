@@ -61,3 +61,38 @@ func (r *status) PublicTimeline(ctx context.Context, only_media, max_id, since_i
 	}
 	return entities, nil
 }
+
+func (r *status) HomeTimeline(ctx context.Context, accountID object.AccountID, only_media, max_id, since_id, limit *uint64) ([]*object.Status, error) {
+	var entities []*object.Status
+
+	query := `
+	SELECT status.*
+	FROM status
+	JOIN relationships ON status.account_id = relationships.following_id
+	WHERE relationships.follower_id = ?`
+
+	args := []interface{}{accountID}
+
+	// TODO only_media
+
+	if max_id != nil {
+		query += " AND status.id <= ?"
+		args = append(args, *max_id)
+	}
+
+	if since_id != nil {
+		query += " AND status.id >= ?"
+		args = append(args, *since_id)
+	}
+
+	query += " ORDER BY status.create_at DESC"
+	if limit != nil {
+		query += " LIMIT ?"
+		args = append(args, *limit)
+	}
+	err := r.db.SelectContext(ctx, &entities, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return entities, nil
+}
