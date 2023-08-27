@@ -26,7 +26,7 @@ CREATE TABLE relationships (
   `follower_id` bigint(20) NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`follower_id`, `followed_id`),
-  FOREIGN KEY (`follower_id`) REFERENCES `account` (`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`followed_id`) REFERENCES `account` (`id`) ON DELETE CASCADE
+  UNIQUE KEY (`following_id`, `follower_id`),
+  FOREIGN KEY (`following_id`) REFERENCES `account` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`follower_id`) REFERENCES `account` (`id`) ON DELETE CASCADE
 );
