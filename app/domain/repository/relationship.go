@@ -13,7 +13,7 @@ type Relationship interface {
 	DeleteFollowing(ctx context.Context, followingID object.AccountID, followerID object.AccountID) error
 
 	// アカウントとの関係を取得
-	FeatchRelationships(ctx context.Context, accountID object.AccountID) ([]*object.Relationship, error)
+	FeatchRelationships(ctx context.Context, accountID object.AccountID) ([]object.Relationship, error)
 
 	// following一覧を取得
 	FeatchFollowing(ctx context.Context, accountID object.AccountID, limit *uint64) ([]*object.Account, error)

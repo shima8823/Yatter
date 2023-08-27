@@ -50,10 +50,24 @@ func (r *relationship) DeleteFollowing(ctx context.Context, followingID object.A
 	return nil
 }
 
-func (r *relationship) FeatchRelationships(ctx context.Context, accountID object.AccountID) ([]*object.Relationship, error) {
-	var entities []*object.Relationship
-	err := r.db.QueryRowxContext(ctx, "select * from relationship where following_id = ? or follower_id = ?", accountID, accountID).StructScan(entities)
+func (r *relationship) FeatchRelationships(ctx context.Context, accountID object.AccountID) ([]object.Relationship, error) {
+	var entities []object.Relationship
+
+	rows, err := r.db.QueryxContext(ctx, "select * from relationship where following_id = ? or follower_id = ?", accountID, accountID)
 	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var entity object.Relationship
+		if err := rows.StructScan(&entity); err != nil {
+			return nil, err
+		}
+		entities = append(entities, entity)
+	}
+
+	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 
