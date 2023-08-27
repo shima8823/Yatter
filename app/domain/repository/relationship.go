@@ -9,24 +9,21 @@ import (
 type Relationship interface {
 	// アカウントのfollowを作成
 	CreateFollowing(ctx context.Context, followingID object.AccountID, followerID object.AccountID) error
-	// // アカウントのunfollowを作成
-	// DeleteFollowing(ctx context.Context, accountID object.AccountID, followingID object.AccountID) error
+	// アカウントのunfollowを作成
+	DeleteFollowing(ctx context.Context, followingID object.AccountID, followerID object.AccountID) error
 
-	// // アカウントとの関係を取得
-	// FindRelationship(ctx context.Context, accountID object.AccountID, followingID object.AccountID) (*object.Relationship, error)
+	// アカウントとの関係を取得
+	FeatchRelationships(ctx context.Context, accountID object.AccountID) ([]*object.Relationship, error)
 
-	// // following一覧を取得
-	// FindFollowing(ctx context.Context, accountID object.AccountID) ([]*object.Account, error)
-	// // follower一覧を取得
-	// FindFollower(ctx context.Context, accountID object.AccountID) ([]*object.Account, error)
+	// following一覧を取得
+	FeatchFollowing(ctx context.Context, accountID object.AccountID, limit *uint64) ([]*object.Account, error)
+	// follower一覧を取得
+	FeatchFollower(ctx context.Context, accountID object.AccountID, max_id, since_id, limit *uint64) ([]*object.Account, error)
 
-	// // followしてるtimelineを取得
-	// FindFollowingTimeline(ctx context.Context, accountID object.AccountID) ([]*object.Status, error)
-
-	// // アカウントのfollowing数を取得
-	// CountFollowing(ctx context.Context, accountID object.AccountID) (int, error)
-	// // アカウントのfollower数を取得
-	// CountFollower(ctx context.Context, accountID object.AccountID) (int, error)
+	// アカウントのfollowing数を取得
+	CountFollowing(ctx context.Context, accountID object.AccountID) (uint64, error)
+	// アカウントのfollower数を取得
+	CountFollower(ctx context.Context, accountID object.AccountID) (uint64, error)
 
 	// utils
 	FindAccountByUsername(ctx context.Context, username string) (*object.Account, error)
