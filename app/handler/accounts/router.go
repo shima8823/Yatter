@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"yatter-backend-go/app/app"
+	"yatter-backend-go/app/handler/accounts/relationships"
+	"yatter-backend-go/app/handler/auth"
 
 	"github.com/go-chi/chi"
 )
@@ -17,9 +19,11 @@ type handler struct {
 func NewRouter(app *app.App) http.Handler {
 	r := chi.NewRouter()
 
-	h := &handler{app: app}
-	r.Post("/", h.Create)
-	r.Get("/{username}", h.FindUser)
+	accoutnHandler := &handler{app: app}
+	relationshipHandler := relationships.NewHandler(app)
+	r.Post("/", accoutnHandler.Create)
+	r.Get("/{username}", accoutnHandler.FindUser)
+	r.With(auth.Middleware(app)).Post("/{username}/follow", relationshipHandler.Create)
 
 	return r
 }
