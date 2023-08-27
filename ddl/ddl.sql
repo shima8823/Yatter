@@ -20,7 +20,7 @@ CREATE TABLE `status` (
   CONSTRAINT `fk_status_account_id` FOREIGN KEY (`account_id`) REFERENCES  `account` (`id`)
 );
 
-CREATE TABLE relationships (
+CREATE TABLE relationship (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `following_id` bigint(20) NOT NULL,
   `follower_id` bigint(20) NOT NULL,
