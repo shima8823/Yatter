@@ -1,9 +1,11 @@
 package timelines
 
 import (
-	"github.com/go-chi/chi"
 	"net/http"
 	"yatter-backend-go/app/app"
+	"yatter-backend-go/app/handler/auth"
+
+	"github.com/go-chi/chi"
 )
 
 type handler struct {
@@ -16,5 +18,6 @@ func NewRouter(app *app.App) http.Handler {
 
 	h := &handler{app: app}
 	r.Get("/public", h.GetPublic)
+	r.With(auth.Middleware(app)).Get("/home", h.GetHome)
 	return r
 }
