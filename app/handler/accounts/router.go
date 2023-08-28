@@ -23,8 +23,12 @@ func NewRouter(app *app.App) http.Handler {
 	relationshipHandler := relationships.NewHandler(app)
 	r.Post("/", accoutnHandler.Create)
 	r.Get("/{username}", accoutnHandler.FindUser)
+
+	// Relationship
 	r.With(auth.Middleware(app)).Post("/{username}/follow", relationshipHandler.Create)
 	r.With(auth.Middleware(app)).Post("/{username}/unfollow", relationshipHandler.Delete)
 	r.With(auth.Middleware(app)).Get("/relationships", relationshipHandler.FetchList)
+
+	r.Get("/{username}/following", relationshipHandler.FetchFollowing)
 	return r
 }
