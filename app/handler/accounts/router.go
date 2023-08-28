@@ -30,5 +30,6 @@ func NewRouter(app *app.App) http.Handler {
 	r.With(auth.Middleware(app)).Get("/relationships", relationshipHandler.FetchList)
 
 	r.Get("/{username}/following", relationshipHandler.FetchFollowing)
+	r.Get("/{username}/followers", relationshipHandler.FetchFollowers)
 	return r
 }
