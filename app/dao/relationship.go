@@ -98,10 +98,35 @@ func (r *relationship) FeatchFollowing(ctx context.Context, accountID object.Acc
 	return entities, nil
 }
 
-func (r *relationship) FeatchFollower(ctx context.Context, accountID object.AccountID, max_id, since_id, limit *uint64) ([]*object.Account, error) {
-	var entities []*object.Account
+func (r *relationship) FeatchFollowers(ctx context.Context, accountID object.AccountID, only_media, max_id, since_id, limit *uint64) ([]object.Account, error) {
+	var entities []object.Account
 
-	query, args := buildQuery("relationship", "follower_id", since_id, max_id, limit)
+	query := `
+		SELECT account.*
+		FROM account
+		JOIN relationship ON account.id = relationship.following_id
+		WHERE relationship.follower_id = ?`
+
+	args := []interface{}{accountID}
+
+	// TODO only_media
+
+	if max_id != nil {
+		query += " AND account.id <= ?"
+		args = append(args, *max_id)
+	}
+
+	if since_id != nil {
+		query += " AND account.id >= ?"
+		args = append(args, *since_id)
+	}
+
+	query += " ORDER BY relationship.create_at DESC"
+	if limit != nil {
+		query += " LIMIT ?"
+		args = append(args, *limit)
+	}
+
 	err := r.db.SelectContext(ctx, &entities, query, args...)
 	if err != nil {
 		return nil, err

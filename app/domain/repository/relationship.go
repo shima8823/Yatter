@@ -18,7 +18,7 @@ type Relationship interface {
 	// following一覧を取得
 	FeatchFollowing(ctx context.Context, accountID object.AccountID, limit *uint64) ([]object.Account, error)
 	// follower一覧を取得
-	FeatchFollower(ctx context.Context, accountID object.AccountID, max_id, since_id, limit *uint64) ([]*object.Account, error)
+	FeatchFollowers(ctx context.Context, accountID object.AccountID, only_media, max_id, since_id, limit *uint64) ([]object.Account, error)
 
 	// アカウントのfollowing数を取得
 	CountFollowing(ctx context.Context, accountID object.AccountID) (uint64, error)
