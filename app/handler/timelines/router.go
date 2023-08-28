@@ -15,6 +15,6 @@ func NewRouter(app *app.App) http.Handler {
 	r := chi.NewRouter()
 
 	h := &handler{app: app}
-	r.Get("/public", h.GetTimeline)
+	r.Get("/public", h.GetPublic)
 	return r
 }

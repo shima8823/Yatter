@@ -62,7 +62,7 @@ func TestGetHandler(t *testing.T) {
 			if tt.mockFunc != nil {
 				tt.mockFunc()
 			}
-			h.GetTimeline(w, r)
+			h.GetPublic(w, r)
 			assert.Equal(t, tt.wantCode, w.Code, "status code should be equal")
 		})
 	}

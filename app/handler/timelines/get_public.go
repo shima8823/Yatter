@@ -7,8 +7,8 @@ import (
 	"yatter-backend-go/app/handler/request"
 )
 
-// Handler request for `GET /v1/timelines`
-func (h *handler) GetTimeline(w http.ResponseWriter, r *http.Request) {
+// Handler request for `GET /v1/timelines/public`
+func (h *handler) GetPublic(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	only_media, max_id, since_id, limit, err := request.ParseQueries(r)
