@@ -34,6 +34,30 @@ func UsernameOf(r *http.Request) (string, error) {
 	return username, nil
 }
 
+func ParseQueries(r *http.Request) (only_media, max_id, since_id, limit *uint64, err error) {
+	only_media, err = ParseQueryPointer(r.URL.Query().Get("only_media"))
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	max_id, err = ParseQueryPointer(r.URL.Query().Get("max_id"))
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	since_id, err = ParseQueryPointer(r.URL.Query().Get("since_id"))
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	limit, err = ParseLimitQuery(r.URL.Query().Get("limit"))
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	return only_media, max_id, since_id, limit, nil
+}
+
 type (
 	parsedQuery struct {
 		id      uint64
