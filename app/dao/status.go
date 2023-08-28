@@ -62,14 +62,14 @@ func (r *status) PublicTimeline(ctx context.Context, only_media, max_id, since_i
 	return entities, nil
 }
 
-func (r *status) HomeTimeline(ctx context.Context, accountID object.AccountID, only_media, max_id, since_id, limit *uint64) ([]*object.Status, error) {
-	var entities []*object.Status
+func (r *status) HomeTimeline(ctx context.Context, accountID object.AccountID, only_media, max_id, since_id, limit *uint64) ([]object.Status, error) {
+	var entities []object.Status
 
 	query := `
-	SELECT status.*
-	FROM status
-	JOIN relationships ON status.account_id = relationships.following_id
-	WHERE relationships.follower_id = ?`
+		SELECT status.*
+		FROM status
+		JOIN relationship ON status.account_id = relationship.follower_id
+		WHERE relationship.following_id = ?`
 
 	args := []interface{}{accountID}
 
