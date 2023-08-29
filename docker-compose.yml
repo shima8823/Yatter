@@ -27,6 +27,7 @@ services:
       MYSQL_PASSWORD: yatter
     volumes:
       - "./.data/mysql_test:/var/lib/mysql"
+      - "./ddl:/docker-entrypoint-initdb.d"
     restart: on-failure
 
   web:
