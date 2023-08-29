@@ -34,6 +34,12 @@ type (
 		// Biography of user
 		Note *string `json:"note,omitempty"`
 
+		// The number of following for the account
+		FollowingCount AccountID `json:"following_count" db:"following_count"`
+
+		// The number of followers for the account
+		FollowersCount AccountID `json:"followers_count" db:"followers_count"`
+
 		// The time the account was created
 		CreateAt DateTime `json:"create_at,omitempty" db:"create_at"`
 	}
