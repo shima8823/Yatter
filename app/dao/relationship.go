@@ -23,11 +23,27 @@ func NewRelationship(db *sqlx.DB) repository.Relationship {
 	return &relationship{db: db}
 }
 
+// following フォローする人
+// follower フォローされる人
+
 func (r *relationship) CreateFollowing(ctx context.Context, followingID object.AccountID, followerID object.AccountID) error {
-	if _, err := r.db.ExecContext(ctx, "insert into relationship (following_id, follower_id) values (?, ?)", followingID, followerID); err != nil {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
 		return err
 	}
-	return nil
+	if _, err := r.db.ExecContext(ctx, "insert into relationship (following_id, follower_id) values (?, ?)", followingID, followerID); err != nil {
+		tx.Rollback()
+		return err
+	}
+	if _, err := r.db.ExecContext(ctx, "update account set following_count = following_count + 1 where id = ?", followingID); err != nil {
+		tx.Rollback()
+		return err
+	}
+	if _, err := r.db.ExecContext(ctx, "update account set followers_count = followers_count + 1 where id = ?", followerID); err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
 }
 
 func (r *relationship) FindAccountByUsername(ctx context.Context, username string) (*object.Account, error) {
@@ -44,10 +60,23 @@ func (r *relationship) FindAccountByUsername(ctx context.Context, username strin
 }
 
 func (r *relationship) DeleteFollowing(ctx context.Context, followingID object.AccountID, followerID object.AccountID) error {
-	if _, err := r.db.ExecContext(ctx, "delete from relationship where following_id = ? and follower_id = ?", followingID, followerID); err != nil {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
 		return err
 	}
-	return nil
+	if _, err := r.db.ExecContext(ctx, "delete from relationship where following_id = ? and follower_id = ?", followingID, followerID); err != nil {
+		tx.Rollback()
+		return err
+	}
+	if _, err := r.db.ExecContext(ctx, "update account set following_count = following_count - 1 where id = ?", followingID); err != nil {
+		tx.Rollback()
+		return err
+	}
+	if _, err := r.db.ExecContext(ctx, "update account set followers_count = followers_count - 1 where id = ?", followerID); err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
 }
 
 func (r *relationship) FeatchRelationships(ctx context.Context, accountID object.AccountID) ([]object.Relationship, error) {
