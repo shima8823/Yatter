@@ -6,6 +6,8 @@ CREATE TABLE `account` (
   `avatar` text,
   `header` text,
   `note` text,
+  `following_count` bigint(20) NOT NULL DEFAULT 0,
+  `followers_count` bigint(20) NOT NULL DEFAULT 0,
   `create_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 );
