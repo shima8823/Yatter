@@ -1,0 +1,19 @@
+name: golang ci
+on: [push]
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+
+    - name: Docker compose up
+      run: docker-compose up -d
+
+    - name: Run tests
+      run: docker exec web make test
+
+    - name: Stop and remove docker containers
+      run: docker-compose down
+      if: always()
