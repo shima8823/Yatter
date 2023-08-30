@@ -98,3 +98,24 @@ func TestFeatchRelationships(t *testing.T) {
 	assert.NotNil(t, relationships)
 	assert.Equal(t, 1, len(relationships))
 }
+
+func TestFeatchFollowing(t *testing.T) {
+	repo, cleanup := setupRelationshipDAO(t)
+	defer cleanup()
+
+	ctx := context.Background()
+	setupAccountDB(t, ctx)
+
+	relationship := &object.Relationship{
+		FollowingId: 1,
+		FollowerId:  2,
+	}
+	var err error
+	err = repo.CreateFollowing(ctx, relationship.FollowingId, relationship.FollowerId)
+	assert.NoError(t, err)
+
+	accounts, err := repo.FeatchFollowing(ctx, relationship.FollowingId, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, accounts)
+	assert.Equal(t, 1, len(accounts))
+}
