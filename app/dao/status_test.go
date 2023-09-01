@@ -11,7 +11,10 @@ import (
 )
 
 func setupStatusDAO(t *testing.T) (repository.Status, func()) {
-	dao := setupDAO(t)
+	dao, err := setupDAO()
+	if err != nil {
+		t.Fatal(err)
+	}
 	dao.InitAll()
 	statusRepo := dao.Status()
 
