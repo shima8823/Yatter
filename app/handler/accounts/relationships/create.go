@@ -43,6 +43,11 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	relationship.FollowingId = followingAccount.ID
 	relationship.FollowerId = followerAccount.ID
 
+	if followingAccount.ID == followerAccount.ID {
+		httperror.Error(w, http.StatusBadRequest)
+		return
+	}
+
 	if err = repo.CreateFollowing(ctx, followingAccount.ID, followerAccount.ID); err != nil {
 		httperror.InternalServerError(w, err)
 		return
