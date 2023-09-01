@@ -152,3 +152,45 @@ func TestFeatchFollowers(t *testing.T) {
 	assert.NotNil(t, accounts)
 	assert.Equal(t, 2, len(accounts))
 }
+
+func TestCountFollowing(t *testing.T) {
+	cleanupDB()
+	ctx := context.Background()
+	insertAccountDB(t, ctx, createAccountObject(3))
+	relationships := []object.Relationship{
+		{
+			FollowingId: 1,
+			FollowerId:  2,
+		},
+		{
+			FollowingId: 1,
+			FollowerId:  3,
+		},
+	}
+	insertRelationshipDB(t, ctx, relationships)
+
+	count, err := relationshipRepo.CountFollowing(ctx, relationships[0].FollowingId)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(2), count)
+}
+
+func TestCountFollower(t *testing.T) {
+	cleanupDB()
+	ctx := context.Background()
+	insertAccountDB(t, ctx, createAccountObject(3))
+	relationships := []object.Relationship{
+		{
+			FollowingId: 1,
+			FollowerId:  2,
+		},
+		{
+			FollowingId: 3,
+			FollowerId:  2,
+		},
+	}
+	insertRelationshipDB(t, ctx, relationships)
+
+	count, err := relationshipRepo.CountFollower(ctx, relationships[0].FollowerId)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(2), count)
+}
