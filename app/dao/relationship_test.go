@@ -2,12 +2,14 @@ package dao_test
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
+	"log"
 	"os"
 	"strconv"
 	"testing"
 	"yatter-backend-go/app/domain/object"
 	"yatter-backend-go/app/domain/repository"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var accountRepo repository.Account
@@ -16,6 +18,7 @@ var cleanupDB func()
 
 func TestMain(m *testing.M) {
 	if dao, err := setupDAO(); err != nil {
+		log.Fatal(err)
 		os.Exit(1)
 	} else {
 		cleanupDB = func() {
