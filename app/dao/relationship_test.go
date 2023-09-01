@@ -127,3 +127,28 @@ func TestFeatchFollowing(t *testing.T) {
 	assert.NotNil(t, accounts)
 	assert.Equal(t, 2, len(accounts))
 }
+
+func TestFeatchFollowers(t *testing.T) {
+	cleanupDB()
+	ctx := context.Background()
+	insertAccountDB(t, ctx, createAccountObject(3))
+	relationships := []object.Relationship{
+		{
+			FollowingId: 1,
+			FollowerId:  2,
+		},
+		{
+			FollowingId: 3,
+			FollowerId:  2,
+		},
+	}
+	max_id := uint64(3)
+	since_id := uint64(1)
+	limit := uint64(2)
+	insertRelationshipDB(t, ctx, relationships)
+
+	accounts, err := relationshipRepo.FeatchFollowers(ctx, relationships[0].FollowerId, nil, &max_id, &since_id, &limit)
+	assert.NoError(t, err)
+	assert.NotNil(t, accounts)
+	assert.Equal(t, 2, len(accounts))
+}
