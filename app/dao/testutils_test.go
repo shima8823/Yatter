@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"testing"
 	"time"
 	"yatter-backend-go/app/dao"
 
@@ -91,13 +90,13 @@ func getString(key string) (string, error) {
 	return v, nil
 }
 
-func setupDAO(t *testing.T) dao.Dao {
+func setupDAO() (dao.Dao, error) {
 	testConf := testMySQLConfig()
 
 	dao, err := dao.New(testConf)
 	if err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
 	dao.InitAll()
-	return dao
+	return dao, nil
 }

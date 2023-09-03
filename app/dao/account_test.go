@@ -10,7 +10,10 @@ import (
 )
 
 func setupAccountDAO(t *testing.T) (repository.Account, func()) {
-	dao := setupDAO(t)
+	dao, err := setupDAO()
+	if err != nil {
+		t.Fatal(err)
+	}
 	dao.InitAll()
 	accountRepo := dao.Account()
 
