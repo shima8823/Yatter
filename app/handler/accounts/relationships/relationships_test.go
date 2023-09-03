@@ -292,6 +292,74 @@ func TestFetchList(t *testing.T) {
 	}
 }
 
+func TestFetchFollowing(t *testing.T) {
+	db, mock := dao.NewMockDB()
+	h := newMockHandler(db)
+	defer db.Close()
+
+	tests := []struct {
+		name         string
+		mockFunc     func()
+		urlParamFunc func(r *http.Request) *http.Request
+		wantCode     int
+	}{
+		{
+			name: "successfully fetch following list",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from account where username = \\?").
+					WithArgs("followingUser").
+					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "followingUser"))
+				mock.ExpectQuery("select account.\\* from account join relationship on account.id = relationship.follower_id where relationship.following_id = \\? limit \\?").
+					WithArgs(1, 10).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(2, "followerUser"))
+			},
+			urlParamFunc: func(r *http.Request) *http.Request { return setChiURLParam(r, "username", "followingUser") },
+			wantCode:     http.StatusOK,
+		},
+		{
+			name: "user not found",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from account where username = \\?").
+					WithArgs("undefined").
+					WillReturnError(sql.ErrNoRows)
+			},
+			urlParamFunc: func(r *http.Request) *http.Request { return setChiURLParam(r, "username", "undefined") },
+			wantCode:     http.StatusNotFound,
+		},
+		{
+			name: "db error",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from account where username = \\?").
+					WithArgs("followingUser").
+					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "followingUser"))
+				mock.ExpectQuery("select account.\\* from account join relationship on account.id = relationship.follower_id where relationship.following_id = \\? limit \\?").
+					WithArgs(1, 10).
+					WillReturnError(sql.ErrNoRows)
+			},
+			urlParamFunc: func(r *http.Request) *http.Request { return setChiURLParam(r, "username", "followingUser") },
+			wantCode:     http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			r, err := http.NewRequest(http.MethodGet, "/v1/accounts/followingUser/following/?limit=10", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tt.urlParamFunc != nil {
+				r = tt.urlParamFunc(r)
+			}
+			if tt.mockFunc != nil {
+				tt.mockFunc()
+			}
+			h.FetchFollowing(w, r)
+			assert.Equal(t, tt.wantCode, w.Code)
+		})
+	}
+}
+
 func newMockHandler(db *sql.DB) *handler {
 	return &handler{
 		app: &app.App{
@@ -305,3 +373,6 @@ func setChiURLParam(r *http.Request, key, value string) *http.Request {
 	rctx.URLParams.Add(key, value)
 	return r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 }
+
+// select account.* from account join relationship on account.id = relationship.follower_id where relationship.following_id = ? limit ?
+// select acconut\.*, from account join relationship on account\.id = relationship\.follower_id where relationship\.following_id = \? limit \?
