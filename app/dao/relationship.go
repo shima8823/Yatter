@@ -104,16 +104,12 @@ func (r *relationship) FeatchRelationships(ctx context.Context, accountID object
 func (r *relationship) FeatchFollowing(ctx context.Context, accountID object.AccountID, limit *uint64) ([]object.Account, error) {
 	var entities []object.Account
 
-	query := `
-		SELECT account.*
-		FROM account
-		JOIN relationship ON account.id = relationship.follower_id
-		WHERE relationship.following_id = ?`
+	query := `select account.* from account join relationship on account.id = relationship.follower_id where relationship.following_id = ?`
 
 	args := []interface{}{accountID}
 
 	if limit != nil {
-		query += " LIMIT ?"
+		query += " limit ?"
 		args = append(args, *limit)
 	}
 
