@@ -212,6 +212,86 @@ func TestDelete(t *testing.T) {
 
 }
 
+func TestFetchList(t *testing.T) {
+	db, mock := dao.NewMockDB()
+	h := newMockHandler(db)
+	defer db.Close()
+
+	tests := []struct {
+		name     string
+		mockFunc func()
+		isAuth   bool
+		wantCode int
+	}{
+		{
+			name: "successfully fetch list",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from account where username = \\?").
+					WithArgs("testuser").
+					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "testuser"))
+				mock.ExpectQuery("select \\* from relationship where following_id = \\? or follower_id = \\?").
+					WithArgs(1, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "following_id", "follower_id"}).AddRow(1, 1, 2))
+			},
+			isAuth:   true,
+			wantCode: http.StatusOK,
+		},
+		{
+			name: "empty list",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from account where username = \\?").
+					WithArgs("testuser").
+					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "testuser"))
+				mock.ExpectQuery("select \\* from relationship where following_id = \\? or follower_id = \\?").
+					WithArgs(1, 1).
+					WillReturnRows(sqlmock.NewRows([]string{"id", "following_id", "follower_id"})) // empty
+			},
+			isAuth:   true,
+			wantCode: http.StatusOK,
+		},
+		{
+			name:     "Unauthorized",
+			wantCode: http.StatusUnauthorized,
+		},
+		{
+			name: "db error",
+			mockFunc: func() {
+				mock.ExpectQuery("select \\* from account where username = \\?").
+					WithArgs("testuser").
+					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "testuser"))
+				mock.ExpectQuery("select \\* from relationship where following_id = \\? or follower_id = \\?").
+					WithArgs(1, 1).
+					WillReturnError(sql.ErrNoRows)
+			},
+			isAuth:   true,
+			wantCode: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			r, err := http.NewRequest(http.MethodGet, "/v1/accounts/relationships", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tt.isAuth {
+				r.Header.Set("Authentication", "username testuser")
+			}
+			if tt.mockFunc != nil {
+				tt.mockFunc()
+			}
+
+			middleware := auth.Middleware(h.app)
+			handlerMiddleware := middleware(http.HandlerFunc(h.FetchList))
+			handlerMiddleware.ServeHTTP(w, r)
+
+			assert.Equal(t, tt.wantCode, w.Code)
+		})
+
+	}
+}
+
 func newMockHandler(db *sql.DB) *handler {
 	return &handler{
 		app: &app.App{
