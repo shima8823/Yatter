@@ -59,15 +59,59 @@ func createAccountObject(num int) []object.Account {
 }
 
 func TestCreateFollowing(t *testing.T) {
-	cleanupDB()
 	ctx := context.Background()
-	insertAccountDB(t, ctx, createAccountObject(2))
-	relationship := &object.Relationship{
-		FollowingId: 1,
-		FollowerId:  2,
+
+	tests := []struct {
+		name          string
+		accounts      []object.Account
+		relationships []object.Relationship
+		wantErr       bool
+	}{
+		{
+			name:     "success",
+			accounts: createAccountObject(2),
+			relationships: []object.Relationship{
+				{
+					FollowingId: 1,
+					FollowerId:  2,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:     "duplicate",
+			accounts: createAccountObject(2),
+			relationships: []object.Relationship{
+				{
+					FollowingId: 1,
+					FollowerId:  2,
+				},
+				{
+					FollowingId: 1,
+					FollowerId:  2,
+				},
+			},
+			wantErr: true,
+		},
 	}
-	err := relationshipRepo.CreateFollowing(ctx, relationship.FollowingId, relationship.FollowerId)
-	assert.NoError(t, err)
+
+	for _, tt := range tests {
+		cleanupDB()
+		insertAccountDB(t, ctx, tt.accounts)
+		for i, relationship := range tt.relationships {
+			err := relationshipRepo.CreateFollowing(ctx, relationship.FollowingId, relationship.FollowerId)
+			if i == len(tt.relationships)-1 { // 重複エラーは最後のみ
+				if tt.wantErr {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		}
+
+	}
 }
 
 func TestDeleteFollowing(t *testing.T) {
