@@ -29,15 +29,15 @@ func (r *relationship) CreateFollowing(ctx context.Context, followingID object.A
 	if err != nil {
 		return err
 	}
-	if _, err := r.db.ExecContext(ctx, "insert into relationship (following_id, follower_id) values (?, ?)", followingID, followerID); err != nil {
+	if _, err := tx.ExecContext(ctx, "insert into relationship (following_id, follower_id) values (?, ?)", followingID, followerID); err != nil {
 		tx.Rollback()
 		return err
 	}
-	if _, err := r.db.ExecContext(ctx, "update account set following_count = following_count + 1 where id = ?", followingID); err != nil {
+	if _, err := tx.ExecContext(ctx, "update account set following_count = following_count + 1 where id = ?", followingID); err != nil {
 		tx.Rollback()
 		return err
 	}
-	if _, err := r.db.ExecContext(ctx, "update account set followers_count = followers_count + 1 where id = ?", followerID); err != nil {
+	if _, err := tx.ExecContext(ctx, "update account set followers_count = followers_count + 1 where id = ?", followerID); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -58,7 +58,7 @@ func (r *relationship) DeleteFollowing(ctx context.Context, followingID object.A
 	if err != nil {
 		return err
 	}
-	if res, err := r.db.ExecContext(ctx, "delete from relationship where following_id = ? and follower_id = ?", followingID, followerID); err != nil {
+	if res, err := tx.ExecContext(ctx, "delete from relationship where following_id = ? and follower_id = ?", followingID, followerID); err != nil {
 		tx.Rollback()
 		return err
 	} else {
@@ -66,11 +66,11 @@ func (r *relationship) DeleteFollowing(ctx context.Context, followingID object.A
 			return fmt.Errorf("not found")
 		}
 	}
-	if _, err := r.db.ExecContext(ctx, "update account set following_count = following_count - 1 where id = ?", followingID); err != nil {
+	if _, err := tx.ExecContext(ctx, "update account set following_count = following_count - 1 where id = ?", followingID); err != nil {
 		tx.Rollback()
 		return err
 	}
-	if _, err := r.db.ExecContext(ctx, "update account set followers_count = followers_count - 1 where id = ?", followerID); err != nil {
+	if _, err := tx.ExecContext(ctx, "update account set followers_count = followers_count - 1 where id = ?", followerID); err != nil {
 		tx.Rollback()
 		return err
 	}
