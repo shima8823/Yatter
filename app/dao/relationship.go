@@ -2,8 +2,6 @@ package dao
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"yatter-backend-go/app/domain/object"
 	"yatter-backend-go/app/domain/repository"
@@ -50,10 +48,6 @@ func (r *relationship) FindAccountByUsername(ctx context.Context, username strin
 	entity := new(object.Account)
 	err := r.db.QueryRowxContext(ctx, "select * from account where username = ?", username).StructScan(entity)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-
 		return nil, fmt.Errorf("%w", err)
 	}
 	return entity, nil
@@ -64,9 +58,13 @@ func (r *relationship) DeleteFollowing(ctx context.Context, followingID object.A
 	if err != nil {
 		return err
 	}
-	if _, err := r.db.ExecContext(ctx, "delete from relationship where following_id = ? and follower_id = ?", followingID, followerID); err != nil {
+	if res, err := r.db.ExecContext(ctx, "delete from relationship where following_id = ? and follower_id = ?", followingID, followerID); err != nil {
 		tx.Rollback()
 		return err
+	} else {
+		if res, _ := res.RowsAffected(); res == 0 {
+			return fmt.Errorf("not found")
+		}
 	}
 	if _, err := r.db.ExecContext(ctx, "update account set following_count = following_count - 1 where id = ?", followingID); err != nil {
 		tx.Rollback()
