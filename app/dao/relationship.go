@@ -48,7 +48,7 @@ func (r *relationship) FindAccountByUsername(ctx context.Context, username strin
 	entity := new(object.Account)
 	err := r.db.QueryRowxContext(ctx, "select * from account where username = ?", username).StructScan(entity)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, err
 	}
 	return entity, nil
 }
