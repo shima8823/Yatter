@@ -108,6 +108,8 @@ func (r *relationship) FeatchFollowing(ctx context.Context, accountID object.Acc
 
 	args := []interface{}{accountID}
 
+	query += " order by relationship.create_at desc"
+
 	if limit != nil {
 		query += " limit ?"
 		args = append(args, *limit)
