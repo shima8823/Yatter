@@ -309,7 +309,7 @@ func TestFetchFollowing(t *testing.T) {
 				mock.ExpectQuery("select \\* from account where username = \\?").
 					WithArgs("followingUser").
 					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "followingUser"))
-				mock.ExpectQuery("select account.\\* from account join relationship on account.id = relationship.follower_id where relationship.following_id = \\? limit \\?").
+				mock.ExpectQuery("select account.\\* from account join relationship on account.id = relationship.follower_id where relationship.following_id = \\? order by relationship.create_at desc limit \\?").
 					WithArgs(1, 10).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(2, "followerUser"))
 			},
@@ -332,7 +332,7 @@ func TestFetchFollowing(t *testing.T) {
 				mock.ExpectQuery("select \\* from account where username = \\?").
 					WithArgs("followingUser").
 					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "followingUser"))
-				mock.ExpectQuery("select account.\\* from account join relationship on account.id = relationship.follower_id where relationship.following_id = \\? limit \\?").
+				mock.ExpectQuery("select account.\\* from account join relationship on account.id = relationship.follower_id where relationship.following_id = \\? order by relationship.create_at desc limit \\?").
 					WithArgs(1, 10).
 					WillReturnError(sql.ErrNoRows)
 			},
