@@ -25,45 +25,44 @@ func setupAccountDAO(t *testing.T) (repository.Account, func()) {
 	return accountRepo, cleanup
 }
 
-// account dao test
-func TestCreateUser(t *testing.T) {
+func TestAccountCreate(t *testing.T) {
 	repo, cleanup := setupAccountDAO(t)
 	defer cleanup()
 	ctx := context.Background()
 
 	t.Run("Success", func(t *testing.T) {
-		err := repo.CreateUser(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
+		err := repo.Create(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
 		assert.NoError(t, err)
 
-		createdAccount, err := repo.FindByUsername(ctx, "testuser")
+		createdAccount, err := repo.Retrieve(ctx, "testuser")
 		assert.NoError(t, err)
 		assert.NotNil(t, createdAccount)
 		assert.Equal(t, "testuser", createdAccount.Username)
 	})
 
 	t.Run("duplicate username", func(t *testing.T) {
-		err := repo.CreateUser(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
+		err := repo.Create(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
 		assert.Error(t, err)
 	})
 }
 
-func TestFindByUsername(t *testing.T) {
+func TestAccountRetrieve(t *testing.T) {
 	repo, cleanup := setupAccountDAO(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	err := repo.CreateUser(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
+	err := repo.Create(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
 	assert.NoError(t, err)
 
 	t.Run("Found", func(t *testing.T) {
-		account, err := repo.FindByUsername(ctx, "testuser")
+		account, err := repo.Retrieve(ctx, "testuser")
 		assert.NoError(t, err)
 		assert.NotNil(t, account)
 		assert.Equal(t, "testuser", account.Username)
 	})
 
 	t.Run("Not found", func(t *testing.T) {
-		account, err := repo.FindByUsername(ctx, "nonexistentuser")
+		account, err := repo.Retrieve(ctx, "nonexistentuser")
 		assert.Error(t, err)
 		assert.Nil(t, account)
 	})

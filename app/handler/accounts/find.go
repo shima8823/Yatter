@@ -15,7 +15,7 @@ func (h *handler) FindUser(w http.ResponseWriter, r *http.Request) {
 	username := chi.URLParam(r, "username")
 
 	w.Header().Set("Content-Type", "application/json")
-	if objAccount, err := h.app.Dao.Account().FindByUsername(ctx, username); err != nil {
+	if objAccount, err := h.app.Dao.Account().Retrieve(ctx, username); err != nil {
 		if err == sql.ErrNoRows {
 			httperror.NotFound(w, username)
 			return

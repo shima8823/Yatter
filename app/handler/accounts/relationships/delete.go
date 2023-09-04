@@ -26,7 +26,7 @@ func (h *handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 
-	followerAccount, err = h.app.Dao.Account().FindByUsername(ctx, followerUsername)
+	followerAccount, err = h.app.Dao.Account().Retrieve(ctx, followerUsername)
 	if err != nil {
 		httperror.NotFound(w, err)
 		return

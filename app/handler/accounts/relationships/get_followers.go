@@ -21,7 +21,7 @@ func (h *handler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 
-	account, err = h.app.Dao.Account().FindByUsername(ctx, username)
+	account, err = h.app.Dao.Account().Retrieve(ctx, username)
 	if err != nil {
 		httperror.NotFound(w, err)
 		return

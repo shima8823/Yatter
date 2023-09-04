@@ -32,7 +32,7 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	repo := h.app.Dao.Account()
-	if err := repo.CreateUser(ctx, account); err != nil {
+	if err := repo.Create(ctx, account); err != nil {
 		httperror.InternalServerError(w, err)
 		return
 	}
