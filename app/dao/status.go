@@ -22,7 +22,7 @@ func NewStatus(db *sqlx.DB) repository.Status {
 	return &status{db: db}
 }
 
-func (r *status) CreateStatus(ctx context.Context, status *object.Status) error {
+func (r *status) Create(ctx context.Context, status *object.Status) error {
 	_, err := r.db.ExecContext(ctx, "insert into status (account_id, content) values (?, ?)", status.AccountId, status.Content)
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func (r *status) CreateStatus(ctx context.Context, status *object.Status) error 
 	return nil
 }
 
-func (r *status) FindByID(ctx context.Context, id uint64) (*object.Status, error) {
+func (r *status) Retrieve(ctx context.Context, id uint64) (*object.Status, error) {
 	entity := new(object.Status)
 	err := r.db.QueryRowxContext(ctx, "select * from status where id = ?", id).StructScan(entity)
 	if err != nil {
@@ -43,7 +43,7 @@ func (r *status) FindByID(ctx context.Context, id uint64) (*object.Status, error
 	return entity, nil
 }
 
-func (r *status) DeleteByID(ctx context.Context, id uint64) error {
+func (r *status) Delete(ctx context.Context, id uint64) error {
 	_, err := r.db.ExecContext(ctx, "delete from status where id = ?", id)
 	if err != nil {
 		return err

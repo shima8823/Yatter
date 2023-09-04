@@ -34,7 +34,7 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	status.Content = req.Status
 
 	repo := h.app.Dao.Status()
-	if err := repo.CreateStatus(ctx, status); err != nil {
+	if err := repo.Create(ctx, status); err != nil {
 		httperror.InternalServerError(w, err)
 		return
 	}

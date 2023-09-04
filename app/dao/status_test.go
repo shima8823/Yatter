@@ -25,7 +25,7 @@ func setupStatusDAO(t *testing.T) (repository.Status, func()) {
 	return statusRepo, cleanup
 }
 
-func TestCreateStatus(t *testing.T) {
+func TestStatusCreate(t *testing.T) {
 	repo, cleanup := setupStatusDAO(t)
 	defer cleanup()
 
@@ -34,15 +34,15 @@ func TestCreateStatus(t *testing.T) {
 		AccountId: 1,
 		Content:   "Test Content",
 	}
-	err := repo.CreateStatus(ctx, status)
+	err := repo.Create(ctx, status)
 	assert.NoError(t, err)
 
-	createdStatus, err := repo.FindByID(ctx, 1)
+	createdStatus, err := repo.Retrieve(ctx, 1)
 	assert.NoError(t, err)
 	assert.NotNil(t, createdStatus)
 }
 
-func TestFindByID(t *testing.T) {
+func TestStatusRetrieve(t *testing.T) {
 	repo, cleanup := setupStatusDAO(t)
 	defer cleanup()
 
@@ -52,24 +52,24 @@ func TestFindByID(t *testing.T) {
 		AccountId: 1,
 		Content:   "Test Content for Find",
 	}
-	err := repo.CreateStatus(ctx, status)
+	err := repo.Create(ctx, status)
 	assert.NoError(t, err)
 
 	t.Run("Found", func(t *testing.T) {
-		foundStatus, err := repo.FindByID(ctx, 1)
+		foundStatus, err := repo.Retrieve(ctx, 1)
 		assert.NoError(t, err)
 		assert.NotNil(t, foundStatus)
 		assert.Equal(t, status.Content, foundStatus.Content)
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		foundStatus, err := repo.FindByID(ctx, 2)
+		foundStatus, err := repo.Retrieve(ctx, 2)
 		assert.NoError(t, err)
 		assert.Nil(t, foundStatus)
 	})
 }
 
-func TestDeleteByID(t *testing.T) {
+func TestStatusDelete(t *testing.T) {
 	repo, cleanup := setupStatusDAO(t)
 	defer cleanup()
 
@@ -79,19 +79,19 @@ func TestDeleteByID(t *testing.T) {
 		AccountId: 1,
 		Content:   "Test Content for Delete",
 	}
-	err := repo.CreateStatus(ctx, status)
+	err := repo.Create(ctx, status)
 	assert.NoError(t, err)
 
 	t.Run("Delete", func(t *testing.T) {
-		err = repo.DeleteByID(ctx, 1)
+		err = repo.Delete(ctx, 1)
 		assert.NoError(t, err)
-		deletedStatus, err := repo.FindByID(ctx, 1)
+		deletedStatus, err := repo.Retrieve(ctx, 1)
 		assert.NoError(t, err)
 		assert.Nil(t, deletedStatus)
 	})
 
 	t.Run("DeleteNotFound", func(t *testing.T) {
-		err = repo.DeleteByID(ctx, 2)
+		err = repo.Delete(ctx, 2)
 		assert.NoError(t, err)
 	})
 }
@@ -108,7 +108,7 @@ func TestPublicTimeline(t *testing.T) {
 			AccountId: uint64(i),
 			Content:   "Test Content " + strings.Repeat("#", i),
 		}
-		err := repo.CreateStatus(ctx, status)
+		err := repo.Create(ctx, status)
 		assert.NoError(t, err)
 	}
 

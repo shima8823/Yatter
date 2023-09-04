@@ -20,7 +20,7 @@ func (h *handler) FindStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if objAccount, err := h.app.Dao.Status().FindByID(ctx, id); err != nil {
+	if objAccount, err := h.app.Dao.Status().Retrieve(ctx, id); err != nil {
 		httperror.InternalServerError(w, err)
 		return
 	} else if objAccount != nil {
