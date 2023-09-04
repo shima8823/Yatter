@@ -8,8 +8,8 @@ import (
 	"yatter-backend-go/app/handler/request"
 )
 
-// Handler request for `GET /v1/accounts/username/followers`
-func (h *handler) FetchFollowers(w http.ResponseWriter, r *http.Request) {
+// Handler request for `GET /v1/accounts/username/following`
+func (h *handler) GetFollowing(w http.ResponseWriter, r *http.Request) {
 	var username string
 	var account *object.Account
 	var err error
@@ -21,20 +21,19 @@ func (h *handler) FetchFollowers(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 
-	repo := h.app.Dao.Relationship()
-	account, err = repo.FindAccountByUsername(ctx, username)
+	account, err = h.app.Dao.Account().FindByUsername(ctx, username)
 	if err != nil {
 		httperror.NotFound(w, err)
 		return
 	}
 
-	only_media, max_id, since_id, limit, err := request.ParseQueries(r)
+	limit, err := request.ParseLimitQuery(r.URL.Query().Get("limit"))
 	if err != nil {
 		httperror.BadRequest(w, err)
 		return
 	}
 
-	accounts, err := repo.FeatchFollowers(ctx, account.ID, only_media, max_id, since_id, limit)
+	accounts, err := h.app.Dao.Relationship().RetrieveFollowing(ctx, account.ID, limit)
 	if err != nil {
 		httperror.InternalServerError(w, err)
 		return
