@@ -10,13 +10,11 @@ import (
 )
 
 type (
-	// Implementation for repository.Status
 	relationship struct {
 		db *sqlx.DB
 	}
 )
 
-// Create status repository
 func NewRelationship(db *sqlx.DB) repository.Relationship {
 	return &relationship{db: db}
 }
@@ -24,7 +22,7 @@ func NewRelationship(db *sqlx.DB) repository.Relationship {
 // following フォローする人
 // follower フォローされる人
 
-func (r *relationship) CreateFollowing(ctx context.Context, followingID object.AccountID, followerID object.AccountID) error {
+func (r *relationship) Create(ctx context.Context, followingID object.AccountID, followerID object.AccountID) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -44,16 +42,7 @@ func (r *relationship) CreateFollowing(ctx context.Context, followingID object.A
 	return tx.Commit()
 }
 
-func (r *relationship) FindAccountByUsername(ctx context.Context, username string) (*object.Account, error) {
-	entity := new(object.Account)
-	err := r.db.QueryRowxContext(ctx, "select * from account where username = ?", username).StructScan(entity)
-	if err != nil {
-		return nil, err
-	}
-	return entity, nil
-}
-
-func (r *relationship) DeleteFollowing(ctx context.Context, followingID object.AccountID, followerID object.AccountID) error {
+func (r *relationship) Delete(ctx context.Context, followingID object.AccountID, followerID object.AccountID) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -77,7 +66,7 @@ func (r *relationship) DeleteFollowing(ctx context.Context, followingID object.A
 	return tx.Commit()
 }
 
-func (r *relationship) FeatchRelationships(ctx context.Context, accountID object.AccountID) ([]object.Relationship, error) {
+func (r *relationship) Retrieve(ctx context.Context, accountID object.AccountID) ([]object.Relationship, error) {
 	var entities []object.Relationship
 
 	rows, err := r.db.QueryxContext(ctx, "select * from relationship where following_id = ? or follower_id = ?", accountID, accountID)
@@ -101,7 +90,7 @@ func (r *relationship) FeatchRelationships(ctx context.Context, accountID object
 	return entities, nil
 }
 
-func (r *relationship) FeatchFollowing(ctx context.Context, accountID object.AccountID, limit *uint64) ([]object.Account, error) {
+func (r *relationship) RetrieveFollowing(ctx context.Context, accountID object.AccountID, limit *uint64) ([]object.Account, error) {
 	var entities []object.Account
 
 	query := `select account.* from account join relationship on account.id = relationship.follower_id where relationship.following_id = ?`
@@ -123,7 +112,7 @@ func (r *relationship) FeatchFollowing(ctx context.Context, accountID object.Acc
 	return entities, nil
 }
 
-func (r *relationship) FeatchFollowers(ctx context.Context, accountID object.AccountID, only_media, max_id, since_id, limit *uint64) ([]object.Account, error) {
+func (r *relationship) RetrieveFollowers(ctx context.Context, accountID object.AccountID, only_media, max_id, since_id, limit *uint64) ([]object.Account, error) {
 	var entities []object.Account
 
 	query := `select account.* from account join relationship on account.id = relationship.following_id where relationship.follower_id = ?`
@@ -166,7 +155,7 @@ func (r *relationship) CountFollowing(ctx context.Context, accountID object.Acco
 	return count, nil
 }
 
-func (r *relationship) CountFollower(ctx context.Context, accountID object.AccountID) (uint64, error) {
+func (r *relationship) CountFollowers(ctx context.Context, accountID object.AccountID) (uint64, error) {
 	var count uint64
 	err := r.db.QueryRowxContext(ctx, "select count(*) from relationship where follower_id = ?", accountID).Scan(&count)
 	if err != nil {

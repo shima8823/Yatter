@@ -283,7 +283,7 @@ func TestFetchList(t *testing.T) {
 			}
 
 			middleware := auth.Middleware(h.app)
-			handlerMiddleware := middleware(http.HandlerFunc(h.FetchList))
+			handlerMiddleware := middleware(http.HandlerFunc(h.Get))
 			handlerMiddleware.ServeHTTP(w, r)
 
 			assert.Equal(t, tt.wantCode, w.Code)
@@ -354,7 +354,7 @@ func TestFetchFollowing(t *testing.T) {
 			if tt.mockFunc != nil {
 				tt.mockFunc()
 			}
-			h.FetchFollowing(w, r)
+			h.GetFollowing(w, r)
 			assert.Equal(t, tt.wantCode, w.Code)
 		})
 	}
@@ -422,7 +422,7 @@ func TestFeatchFollowers(t *testing.T) {
 			if tt.mockFunc != nil {
 				tt.mockFunc()
 			}
-			h.FetchFollowers(w, r)
+			h.GetFollowers(w, r)
 			assert.Equal(t, tt.wantCode, w.Code)
 		})
 	}

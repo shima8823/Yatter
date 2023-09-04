@@ -14,7 +14,7 @@ type AddRequest struct {
 	followerID  string
 }
 
-// Handler request for `GET /v1/accounts/{username}/follow`
+// Handler request for `POST /v1/accounts/{username}/follow`
 func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	followingAccount := auth.AccountOf(r)
 	if followingAccount == nil {
@@ -32,8 +32,7 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 
-	repo := h.app.Dao.Relationship()
-	followerAccount, err = repo.FindAccountByUsername(ctx, followerUsername)
+	followerAccount, err = h.app.Dao.Account().FindByUsername(ctx, followerUsername)
 	if err != nil {
 		httperror.NotFound(w, err)
 		return
@@ -48,7 +47,7 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = repo.CreateFollowing(ctx, followingAccount.ID, followerAccount.ID); err != nil {
+	if err = h.app.Dao.Relationship().Create(ctx, followingAccount.ID, followerAccount.ID); err != nil {
 		httperror.InternalServerError(w, err)
 		return
 	}
