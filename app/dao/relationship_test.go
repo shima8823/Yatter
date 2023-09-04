@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 
 func insertAccountDB(t *testing.T, ctx context.Context, accounts []object.Account) {
 	for _, account := range accounts {
-		err := accountRepo.CreateUser(ctx, &account)
+		err := accountRepo.Create(ctx, &account)
 		assert.NoError(t, err)
 	}
 }
@@ -58,7 +58,7 @@ func createAccountObject(num int) []object.Account {
 	return accounts
 }
 
-func TestCreate(t *testing.T) {
+func TestRelationshipCreate(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -114,7 +114,7 @@ func TestCreate(t *testing.T) {
 	}
 }
 
-func TestDelete(t *testing.T) {
+func TestRelationshipDelete(t *testing.T) {
 	cleanupDB()
 	ctx := context.Background()
 	insertAccountDB(t, ctx, createAccountObject(2))
@@ -130,7 +130,7 @@ func TestDelete(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestRetrieve(t *testing.T) {
+func TestRelationshipRetrieve(t *testing.T) {
 	cleanupDB()
 	ctx := context.Background()
 	insertAccountDB(t, ctx, createAccountObject(2))
