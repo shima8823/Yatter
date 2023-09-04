@@ -64,7 +64,7 @@ func TestFindByUsername(t *testing.T) {
 
 	t.Run("Not found", func(t *testing.T) {
 		account, err := repo.FindByUsername(ctx, "nonexistentuser")
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Nil(t, account)
 	})
 }
