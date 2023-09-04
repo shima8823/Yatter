@@ -9,7 +9,7 @@ import (
 )
 
 // Handler request for `GET /v1/accounts/username/followers`
-func (h *handler) FetchFollowers(w http.ResponseWriter, r *http.Request) {
+func (h *handler) GetFollowers(w http.ResponseWriter, r *http.Request) {
 	var username string
 	var account *object.Account
 	var err error
@@ -21,8 +21,7 @@ func (h *handler) FetchFollowers(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 
-	repo := h.app.Dao.Relationship()
-	account, err = repo.FindAccountByUsername(ctx, username)
+	account, err = h.app.Dao.Account().Retrieve(ctx, username)
 	if err != nil {
 		httperror.NotFound(w, err)
 		return
@@ -34,7 +33,7 @@ func (h *handler) FetchFollowers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accounts, err := repo.FeatchFollowers(ctx, account.ID, only_media, max_id, since_id, limit)
+	accounts, err := h.app.Dao.Relationship().RetrieveFollowers(ctx, account.ID, only_media, max_id, since_id, limit)
 	if err != nil {
 		httperror.InternalServerError(w, err)
 		return

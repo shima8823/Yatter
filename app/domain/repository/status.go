@@ -7,18 +7,10 @@ import (
 )
 
 type Status interface {
-	// Create status
-	CreateStatus(ctx context.Context, status *object.Status) error
+	Create(ctx context.Context, status *object.Status) error
+	Retrieve(ctx context.Context, id uint64) (*object.Status, error)
+	Delete(ctx context.Context, id uint64) error
 
-	// Find status by id
-	FindByID(ctx context.Context, id uint64) (*object.Status, error)
-
-	// Delete status by id
-	DeleteByID(ctx context.Context, id uint64) error
-
-	// public timeline
 	PublicTimeline(ctx context.Context, only_media, max_id, since_id, limit *uint64) ([]*object.Status, error)
-
-	// home timeline
 	HomeTimeline(ctx context.Context, accountID object.AccountID, only_media, max_id, since_id, limit *uint64) ([]object.Status, error)
 }

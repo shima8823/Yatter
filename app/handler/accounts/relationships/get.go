@@ -8,7 +8,7 @@ import (
 )
 
 // Handler request for `GET /v1/accounts/relationships`
-func (h *handler) FetchList(w http.ResponseWriter, r *http.Request) {
+func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	account := auth.AccountOf(r)
 	if account == nil {
@@ -16,8 +16,7 @@ func (h *handler) FetchList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repo := h.app.Dao.Relationship()
-	relationships, err := repo.FeatchRelationships(ctx, account.ID)
+	relationships, err := h.app.Dao.Relationship().Retrieve(ctx, account.ID)
 	if err != nil {
 		httperror.InternalServerError(w, err)
 		return

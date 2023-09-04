@@ -17,13 +17,13 @@ func (h *handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := h.app.Dao.Status().FindByID(ctx, id); err != nil {
+	if _, err := h.app.Dao.Status().Retrieve(ctx, id); err != nil {
 		httperror.NotFound(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := h.app.Dao.Status().DeleteByID(ctx, id); err != nil {
+	if err := h.app.Dao.Status().Delete(ctx, id); err != nil {
 		httperror.InternalServerError(w, err)
 		return
 	}
