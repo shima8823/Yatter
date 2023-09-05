@@ -2,36 +2,12 @@ package dao_test
 
 import (
 	"context"
-	"log"
-	"os"
 	"strconv"
 	"testing"
 	"yatter-backend-go/app/domain/object"
-	"yatter-backend-go/app/domain/repository"
 
 	"github.com/stretchr/testify/assert"
 )
-
-var accountRepo repository.Account
-var relationshipRepo repository.Relationship
-var cleanupDB func()
-
-func TestMain(m *testing.M) {
-	if dao, err := setupDAO(); err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	} else {
-		cleanupDB = func() {
-			dao.InitAll()
-		}
-		defer dao.Close()
-
-		accountRepo = dao.Account()
-		relationshipRepo = dao.Relationship()
-	}
-
-	os.Exit(m.Run())
-}
 
 func insertAccountDB(t *testing.T, ctx context.Context, accounts []object.Account) {
 	for _, account := range accounts {
