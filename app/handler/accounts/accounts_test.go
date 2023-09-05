@@ -148,7 +148,7 @@ func TestFindUserHandler(t *testing.T) {
 				tt.mockFunc()
 			}
 
-			h.FindUser(w, r)
+			h.Get(w, r)
 
 			assert.Equal(t, tt.wantCode, w.Code)
 			if tt.wantCode == http.StatusOK {

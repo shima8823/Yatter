@@ -10,7 +10,7 @@ import (
 )
 
 // Handler request for `GET /v1/statuses/id`
-func (h *handler) FindStatus(w http.ResponseWriter, r *http.Request) {
+func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	strId := chi.URLParam(r, "id")
 	id, err := strconv.ParseUint(strId, 10, 64)

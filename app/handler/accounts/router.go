@@ -10,7 +10,6 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// Implementation of handler
 type handler struct {
 	app *app.App
 }
@@ -22,7 +21,7 @@ func NewRouter(app *app.App) http.Handler {
 	accoutnHandler := &handler{app: app}
 	relationshipHandler := relationships.NewHandler(app)
 	r.Post("/", accoutnHandler.Create)
-	r.Get("/{username}", accoutnHandler.FindUser)
+	r.Get("/{username}", accoutnHandler.Get)
 
 	// Relationship
 	r.With(auth.Middleware(app)).Post("/{username}/follow", relationshipHandler.Create)

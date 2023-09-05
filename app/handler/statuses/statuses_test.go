@@ -161,7 +161,7 @@ func TestFindHandler(t *testing.T) {
 			if tt.mockFunc != nil {
 				tt.mockFunc()
 			}
-			h.FindStatus(w, r)
+			h.Get(w, r)
 
 			assert.Equal(t, tt.wantCode, w.Code)
 			if tt.wantCode == http.StatusOK {
