@@ -5,14 +5,18 @@ import (
 	"encoding/json"
 	"net/http"
 	"yatter-backend-go/app/handler/httperror"
-
-	"github.com/go-chi/chi"
+	"yatter-backend-go/app/handler/request"
 )
 
 // Handler request for `GET /v1/accounts/username`
 func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	username := chi.URLParam(r, "username")
+
+	username, err := request.UsernameOf(r)
+	if err != nil {
+		httperror.BadRequest(w, err)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if objAccount, err := h.app.Dao.Account().Retrieve(ctx, username); err != nil {
