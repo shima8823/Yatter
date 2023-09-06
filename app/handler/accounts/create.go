@@ -8,7 +8,6 @@ import (
 	"yatter-backend-go/app/handler/httperror"
 )
 
-// Request body for `POST /v1/accounts`
 type AddRequest struct {
 	Username string
 	Password string

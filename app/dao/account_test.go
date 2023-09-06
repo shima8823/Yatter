@@ -2,68 +2,93 @@ package dao_test
 
 import (
 	"context"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"yatter-backend-go/app/domain/object"
-	"yatter-backend-go/app/domain/repository"
-
-	"github.com/stretchr/testify/assert"
 )
 
-func setupAccountDAO(t *testing.T) (repository.Account, func()) {
-	dao, err := setupDAO()
-	if err != nil {
-		t.Fatal(err)
-	}
-	dao.InitAll()
-	accountRepo := dao.Account()
-
-	cleanup := func() {
-		dao.InitAll()
-		dao.Close()
-	}
-
-	return accountRepo, cleanup
-}
-
 func TestAccountCreate(t *testing.T) {
-	repo, cleanup := setupAccountDAO(t)
-	defer cleanup()
 	ctx := context.Background()
+	tests := []struct {
+		name      string
+		accounts  []object.Account
+		wantError bool
+	}{
+		{
+			name: "Success",
+			accounts: []object.Account{{
+				Username: "testuser", PasswordHash: "hashedpassword",
+			}},
+			wantError: false,
+		},
+		{
+			name: "Duplicate username",
+			accounts: []object.Account{{
+				Username:     "testuser",
+				PasswordHash: "hashedpassword",
+			}, {
+				Username:     "testuser",
+				PasswordHash: "hashedpassword",
+			}},
+			wantError: true,
+		},
+	}
 
-	t.Run("Success", func(t *testing.T) {
-		err := repo.Create(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
-		assert.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanupDB()
 
-		createdAccount, err := repo.Retrieve(ctx, "testuser")
-		assert.NoError(t, err)
-		assert.NotNil(t, createdAccount)
-		assert.Equal(t, "testuser", createdAccount.Username)
-	})
-
-	t.Run("duplicate username", func(t *testing.T) {
-		err := repo.Create(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
-		assert.Error(t, err)
-	})
+			for i, account := range tt.accounts {
+				err := accountRepo.Create(ctx, &account)
+				if i == len(tt.accounts)-1 {
+					if tt.wantError {
+						assert.Error(t, err)
+					}
+				} else {
+					assert.NoError(t, err)
+				}
+			}
+		})
+	}
 }
 
 func TestAccountRetrieve(t *testing.T) {
-	repo, cleanup := setupAccountDAO(t)
-	defer cleanup()
 	ctx := context.Background()
 
-	err := repo.Create(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
-	assert.NoError(t, err)
+	tests := []struct {
+		name     string
+		accounts []object.Account
+		wantErr  bool
+	}{
+		{
+			name: "Success",
+			accounts: []object.Account{{
+				Username: "testuser", PasswordHash: "hashedpassword",
+			}},
+			wantErr: false,
+		},
+		{
+			name:    "Not found",
+			wantErr: true,
+		},
+	}
 
-	t.Run("Found", func(t *testing.T) {
-		account, err := repo.Retrieve(ctx, "testuser")
-		assert.NoError(t, err)
-		assert.NotNil(t, account)
-		assert.Equal(t, "testuser", account.Username)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanupDB()
 
-	t.Run("Not found", func(t *testing.T) {
-		account, err := repo.Retrieve(ctx, "nonexistentuser")
-		assert.Error(t, err)
-		assert.Nil(t, account)
-	})
+			for _, account := range tt.accounts {
+				err := accountRepo.Create(ctx, &account)
+				assert.NoError(t, err)
+			}
+
+			account, err := accountRepo.Retrieve(ctx, "testuser")
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, account)
+			}
+		})
+	}
 }

@@ -1,19 +1,18 @@
 package statuses
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"yatter-backend-go/app/handler/httperror"
-
-	"github.com/go-chi/chi"
+	"yatter-backend-go/app/handler/request"
 )
 
 // Handler request for `GET /v1/statuses/id`
-func (h *handler) FindStatus(w http.ResponseWriter, r *http.Request) {
+func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	strId := chi.URLParam(r, "id")
-	id, err := strconv.ParseUint(strId, 10, 64)
+
+	id, err := request.IDOf(r)
 	if err != nil {
 		httperror.BadRequest(w, err)
 		return
@@ -21,6 +20,10 @@ func (h *handler) FindStatus(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if objAccount, err := h.app.Dao.Status().Retrieve(ctx, id); err != nil {
+		if err == sql.ErrNoRows {
+			httperror.NotFound(w, id)
+			return
+		}
 		httperror.InternalServerError(w, err)
 		return
 	} else if objAccount != nil {

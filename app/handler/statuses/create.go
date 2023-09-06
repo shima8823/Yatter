@@ -9,7 +9,6 @@ import (
 	"yatter-backend-go/app/handler/httperror"
 )
 
-// Request body for `POST /v1/statuses`
 type AddRequest struct {
 	Status string
 }

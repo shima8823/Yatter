@@ -131,8 +131,7 @@ func TestFindUserHandler(t *testing.T) {
 					WithArgs("testuser").
 					WillReturnError(sql.ErrNoRows)
 			},
-			urlParamFunc: func(r *http.Request) *http.Request { return setChiURLParam(r, "undefined", "testuser") },
-			wantCode:     http.StatusInternalServerError,
+			wantCode: http.StatusBadRequest,
 		},
 	}
 
@@ -143,12 +142,14 @@ func TestFindUserHandler(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			r = tt.urlParamFunc(r)
+			if tt.urlParamFunc != nil {
+				r = tt.urlParamFunc(r)
+			}
 			if tt.mockFunc != nil {
 				tt.mockFunc()
 			}
 
-			h.FindUser(w, r)
+			h.Get(w, r)
 
 			assert.Equal(t, tt.wantCode, w.Code)
 			if tt.wantCode == http.StatusOK {

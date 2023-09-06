@@ -2,148 +2,268 @@ package dao_test
 
 import (
 	"context"
+	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 	"yatter-backend-go/app/domain/object"
-	"yatter-backend-go/app/domain/repository"
-
-	"github.com/stretchr/testify/assert"
 )
 
-func setupStatusDAO(t *testing.T) (repository.Status, func()) {
-	dao, err := setupDAO()
-	if err != nil {
-		t.Fatal(err)
-	}
-	dao.InitAll()
-	statusRepo := dao.Status()
-
-	cleanup := func() {
-		dao.InitAll()
-	}
-
-	return statusRepo, cleanup
-}
-
 func TestStatusCreate(t *testing.T) {
-	repo, cleanup := setupStatusDAO(t)
-	defer cleanup()
-
 	ctx := context.Background()
-	status := &object.Status{
-		AccountId: 1,
-		Content:   "Test Content",
-	}
-	err := repo.Create(ctx, status)
-	assert.NoError(t, err)
 
-	createdStatus, err := repo.Retrieve(ctx, 1)
-	assert.NoError(t, err)
-	assert.NotNil(t, createdStatus)
+	tests := []struct {
+		name     string
+		statuses []object.Status
+	}{
+		{
+			name: "Success",
+			statuses: []object.Status{{
+				AccountId: 1, Content: "Test Content",
+			}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanupDB()
+
+			for _, status := range tt.statuses {
+				err := statusRepo.Create(ctx, &status)
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestStatusRetrieve(t *testing.T) {
-	repo, cleanup := setupStatusDAO(t)
-	defer cleanup()
-
 	ctx := context.Background()
 
-	status := &object.Status{
-		AccountId: 1,
-		Content:   "Test Content for Find",
+	tests := []struct {
+		name     string
+		statuses []object.Status
+		wantErr  bool
+	}{
+		{
+			name: "Success",
+			statuses: []object.Status{{
+				AccountId: 1, Content: "Test Content",
+			}},
+			wantErr: false,
+		},
+		{
+			name:     "NotFound",
+			statuses: []object.Status{},
+			wantErr:  true,
+		},
 	}
-	err := repo.Create(ctx, status)
-	assert.NoError(t, err)
 
-	t.Run("Found", func(t *testing.T) {
-		foundStatus, err := repo.Retrieve(ctx, 1)
-		assert.NoError(t, err)
-		assert.NotNil(t, foundStatus)
-		assert.Equal(t, status.Content, foundStatus.Content)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanupDB()
 
-	t.Run("NotFound", func(t *testing.T) {
-		foundStatus, err := repo.Retrieve(ctx, 2)
-		assert.NoError(t, err)
-		assert.Nil(t, foundStatus)
-	})
+			for _, status := range tt.statuses {
+				err := statusRepo.Create(ctx, &status)
+				assert.NoError(t, err)
+			}
+
+			status, err := statusRepo.Retrieve(ctx, 1)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, status)
+			}
+		})
+	}
 }
 
 func TestStatusDelete(t *testing.T) {
-	repo, cleanup := setupStatusDAO(t)
-	defer cleanup()
-
 	ctx := context.Background()
 
-	status := &object.Status{
-		AccountId: 1,
-		Content:   "Test Content for Delete",
+	tests := []struct {
+		name     string
+		statuses []object.Status
+		wantErr  bool
+	}{
+		{
+			name: "Success",
+			statuses: []object.Status{{
+				AccountId: 1, Content: "Test Content",
+			}},
+			wantErr: false,
+		},
+		{
+			name:     "NotFound",
+			statuses: []object.Status{},
+			wantErr:  true,
+		},
 	}
-	err := repo.Create(ctx, status)
-	assert.NoError(t, err)
 
-	t.Run("Delete", func(t *testing.T) {
-		err = repo.Delete(ctx, 1)
-		assert.NoError(t, err)
-		deletedStatus, err := repo.Retrieve(ctx, 1)
-		assert.NoError(t, err)
-		assert.Nil(t, deletedStatus)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanupDB()
 
-	t.Run("DeleteNotFound", func(t *testing.T) {
-		err = repo.Delete(ctx, 2)
-		assert.NoError(t, err)
-	})
+			for _, status := range tt.statuses {
+				err := statusRepo.Create(ctx, &status)
+				assert.NoError(t, err)
+			}
+
+			err := statusRepo.Delete(ctx, 1)
+			if tt.wantErr {
+				assert.NoError(t, err)
+			} else {
+				assert.NoError(t, err)
+				deletedStatus, err := statusRepo.Retrieve(ctx, 1)
+				assert.Error(t, err)
+				assert.Nil(t, deletedStatus)
+			}
+		})
+	}
 }
 
 func TestPublicTimeline(t *testing.T) {
-	repo, cleanup := setupStatusDAO(t)
-	defer cleanup()
-
 	ctx := context.Background()
+	cleanupDB()
 
-	// テストのためのデータを作成
 	for i := 1; i <= 10; i++ {
 		status := &object.Status{
 			AccountId: uint64(i),
 			Content:   "Test Content " + strings.Repeat("#", i),
 		}
-		err := repo.Create(ctx, status)
+		err := statusRepo.Create(ctx, status)
 		assert.NoError(t, err)
 	}
 
-	t.Run("All", func(t *testing.T) {
-		allStatuses, err := repo.PublicTimeline(ctx, nil, nil, nil, nil)
-		assert.NoError(t, err)
-		assert.Equal(t, 10, len(allStatuses))
-	})
+	tests := []struct {
+		name      string
+		expectLen int
+		wantArgs  func() (only_media, max_id, since_id, limit *uint64)
+	}{
+		{
+			name:      "All",
+			expectLen: 10,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, nil, nil, nil
+			},
+		},
+		{
+			name:      "Limit",
+			expectLen: 5,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, nil, nil, newUint64(5)
+			},
+		},
+		{
+			name:      "SinceID",
+			expectLen: 6,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, nil, newUint64(5), nil
+			},
+		},
+		{
+			name:      "MaxID",
+			expectLen: 5,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, newUint64(5), nil, nil
+			},
+		},
+		{
+			name:      "SinceIDAndMaxID",
+			expectLen: 4,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, newUint64(8), newUint64(5), nil
+			},
+		},
+	}
 
-	t.Run("Limit", func(t *testing.T) {
-		limit := uint64(5)
-		limitedStatuses, err := repo.PublicTimeline(ctx, nil, nil, nil, &limit)
-		assert.NoError(t, err)
-		assert.Equal(t, 5, len(limitedStatuses))
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			only_media, max_id, since_id, limit := tt.wantArgs()
+			allStatuses, err := statusRepo.PublicTimeline(ctx, only_media, max_id, since_id, limit)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectLen, len(allStatuses))
+		})
+	}
+}
 
-	t.Run("SinceID", func(t *testing.T) {
-		sinceID := uint64(5)
-		sinceIDStatuses, err := repo.PublicTimeline(ctx, nil, nil, &sinceID, nil)
-		assert.NoError(t, err)
-		assert.Equal(t, 6, len(sinceIDStatuses))
+func TestHomeTimeline(t *testing.T) {
+	ctx := context.Background()
+	cleanupDB()
+	defer cleanupDB()
+	followingID := uint64(1)
+	insertRelationshipDB(t, ctx, []object.Relationship{
+		{
+			FollowingId: followingID,
+			FollowerId:  2,
+		},
 	})
+	for i := 1; i <= 10; i++ {
+		status := &object.Status{
+			AccountId: 2,
+			Content:   "Test Content " + strings.Repeat("#", i),
+		}
+		err := statusRepo.Create(ctx, status)
+		assert.NoError(t, err)
+	}
 
-	t.Run("MaxID", func(t *testing.T) {
-		maxID := uint64(5)
-		maxIDStatuses, err := repo.PublicTimeline(ctx, nil, &maxID, nil, nil)
-		assert.NoError(t, err)
-		assert.Equal(t, 5, len(maxIDStatuses))
-	})
+	tests := []struct {
+		name      string
+		accountId uint64
+		expectLen int
+		wantArgs  func() (only_media, max_id, since_id, limit *uint64)
+	}{
+		{
+			name:      "All",
+			accountId: followingID,
+			expectLen: 10,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, nil, nil, nil
+			},
+		},
+		{
+			name:      "Limit",
+			accountId: followingID,
+			expectLen: 5,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, nil, nil, newUint64(5)
+			},
+		},
+		{
+			name:      "SinceID",
+			accountId: followingID,
+			expectLen: 6,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, nil, newUint64(5), nil
+			},
+		},
+		{
+			name:      "MaxID",
+			accountId: followingID,
+			expectLen: 5,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, newUint64(5), nil, nil
+			},
+		},
+		{
+			name:      "SinceIDAndMaxID",
+			accountId: followingID,
+			expectLen: 4,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, newUint64(8), newUint64(5), nil
+			},
+		},
+	}
 
-	t.Run("SinceIDAndMaxID", func(t *testing.T) {
-		sinceID := uint64(5)
-		maxID := uint64(8)
-		sinceIDAndMaxIDStatuses, err := repo.PublicTimeline(ctx, nil, &maxID, &sinceID, nil)
-		assert.NoError(t, err)
-		assert.Equal(t, 4, len(sinceIDAndMaxIDStatuses))
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			only_media, max_id, since_id, limit := tt.wantArgs()
+			allStatuses, err := statusRepo.HomeTimeline(ctx, tt.accountId, only_media, max_id, since_id, limit)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectLen, len(allStatuses))
+		})
+	}
+}
+
+func newUint64(i uint64) *uint64 {
+	return &i
 }

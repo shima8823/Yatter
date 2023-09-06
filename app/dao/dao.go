@@ -11,13 +11,9 @@ import (
 )
 
 type (
-	// DAO interface
 	Dao interface {
-		// Get account repository
 		Account() repository.Account
-		// Get status repository
 		Status() repository.Status
-		// Get relationship repository
 		Relationship() repository.Relationship
 
 		// Clear all data in DB
@@ -27,13 +23,11 @@ type (
 		Close() error
 	}
 
-	// Implementation for DAO
 	dao struct {
 		db *sqlx.DB
 	}
 )
 
-// Create DAO
 func New(config DBConfig) (Dao, error) {
 	db, err := initDb(config)
 	if err != nil {
