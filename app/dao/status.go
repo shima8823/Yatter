@@ -2,8 +2,6 @@ package dao
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"yatter-backend-go/app/domain/object"
 	"yatter-backend-go/app/domain/repository"
 
@@ -11,13 +9,11 @@ import (
 )
 
 type (
-	// Implementation for repository.Status
 	status struct {
 		db *sqlx.DB
 	}
 )
 
-// Create status repository
 func NewStatus(db *sqlx.DB) repository.Status {
 	return &status{db: db}
 }
@@ -34,9 +30,6 @@ func (r *status) Retrieve(ctx context.Context, id uint64) (*object.Status, error
 	entity := new(object.Status)
 	err := r.db.QueryRowxContext(ctx, "select * from status where id = ?", id).StructScan(entity)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
 		return nil, err
 	}
 
