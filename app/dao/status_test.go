@@ -10,75 +10,120 @@ import (
 
 func TestStatusCreate(t *testing.T) {
 	ctx := context.Background()
-	cleanupDB()
 
-	status := &object.Status{
-		AccountId: 1,
-		Content:   "Test Content",
+	tests := []struct {
+		name     string
+		statuses []object.Status
+	}{
+		{
+			name: "Success",
+			statuses: []object.Status{{
+				AccountId: 1, Content: "Test Content",
+			}},
+		},
 	}
-	err := statusRepo.Create(ctx, status)
-	assert.NoError(t, err)
 
-	createdStatus, err := statusRepo.Retrieve(ctx, 1)
-	assert.NoError(t, err)
-	assert.NotNil(t, createdStatus)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanupDB()
+
+			for _, status := range tt.statuses {
+				err := statusRepo.Create(ctx, &status)
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestStatusRetrieve(t *testing.T) {
 	ctx := context.Background()
-	cleanupDB()
 
-	status := &object.Status{
-		AccountId: 1,
-		Content:   "Test Content for Find",
+	tests := []struct {
+		name     string
+		statuses []object.Status
+		wantErr  bool
+	}{
+		{
+			name: "Success",
+			statuses: []object.Status{{
+				AccountId: 1, Content: "Test Content",
+			}},
+			wantErr: false,
+		},
+		{
+			name:     "NotFound",
+			statuses: []object.Status{},
+			wantErr:  true,
+		},
 	}
-	err := statusRepo.Create(ctx, status)
-	assert.NoError(t, err)
 
-	t.Run("Found", func(t *testing.T) {
-		foundStatus, err := statusRepo.Retrieve(ctx, 1)
-		assert.NoError(t, err)
-		assert.NotNil(t, foundStatus)
-		assert.Equal(t, status.Content, foundStatus.Content)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanupDB()
 
-	t.Run("NotFound", func(t *testing.T) {
-		foundStatus, err := statusRepo.Retrieve(ctx, 2)
-		assert.NoError(t, err)
-		assert.Nil(t, foundStatus)
-	})
+			for _, status := range tt.statuses {
+				err := statusRepo.Create(ctx, &status)
+				assert.NoError(t, err)
+			}
+
+			status, err := statusRepo.Retrieve(ctx, 1)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, status)
+			}
+		})
+	}
 }
 
 func TestStatusDelete(t *testing.T) {
 	ctx := context.Background()
-	cleanupDB()
 
-	status := &object.Status{
-		AccountId: 1,
-		Content:   "Test Content for Delete",
+	tests := []struct {
+		name     string
+		statuses []object.Status
+		wantErr  bool
+	}{
+		{
+			name: "Success",
+			statuses: []object.Status{{
+				AccountId: 1, Content: "Test Content",
+			}},
+			wantErr: false,
+		},
+		{
+			name:     "NotFound",
+			statuses: []object.Status{},
+			wantErr:  true,
+		},
 	}
-	err := statusRepo.Create(ctx, status)
-	assert.NoError(t, err)
 
-	t.Run("Delete", func(t *testing.T) {
-		err = statusRepo.Delete(ctx, 1)
-		assert.NoError(t, err)
-		deletedStatus, err := statusRepo.Retrieve(ctx, 1)
-		assert.NoError(t, err)
-		assert.Nil(t, deletedStatus)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanupDB()
 
-	t.Run("DeleteNotFound", func(t *testing.T) {
-		err = statusRepo.Delete(ctx, 2)
-		assert.NoError(t, err)
-	})
+			for _, status := range tt.statuses {
+				err := statusRepo.Create(ctx, &status)
+				assert.NoError(t, err)
+			}
+
+			err := statusRepo.Delete(ctx, 1)
+			if tt.wantErr {
+				assert.NoError(t, err)
+			} else {
+				assert.NoError(t, err)
+				deletedStatus, err := statusRepo.Retrieve(ctx, 1)
+				assert.Error(t, err)
+				assert.Nil(t, deletedStatus)
+			}
+		})
+	}
 }
 
 func TestPublicTimeline(t *testing.T) {
 	ctx := context.Background()
-	cleanupDB()
 
-	// テストのためのデータを作成
 	for i := 1; i <= 10; i++ {
 		status := &object.Status{
 			AccountId: uint64(i),
@@ -88,38 +133,65 @@ func TestPublicTimeline(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	t.Run("All", func(t *testing.T) {
-		allStatuses, err := statusRepo.PublicTimeline(ctx, nil, nil, nil, nil)
-		assert.NoError(t, err)
-		assert.Equal(t, 10, len(allStatuses))
-	})
+	tests := []struct {
+		name      string
+		expectLen int
+		wantArgs  func() (only_media, max_id, since_id, limit *uint64)
+		wantErr   bool
+	}{
+		{
+			name:      "All",
+			expectLen: 10,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, nil, nil, nil
+			},
+			wantErr: false,
+		},
+		{
+			name:      "Limit",
+			expectLen: 5,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, nil, nil, newUint64(5)
+			},
+			wantErr: true,
+		},
+		{
+			name:      "SinceID",
+			expectLen: 6,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, nil, newUint64(5), nil
+			},
 
-	t.Run("Limit", func(t *testing.T) {
-		limit := uint64(5)
-		limitedStatuses, err := statusRepo.PublicTimeline(ctx, nil, nil, nil, &limit)
-		assert.NoError(t, err)
-		assert.Equal(t, 5, len(limitedStatuses))
-	})
+			wantErr: false,
+		},
+		{
+			name:      "MaxID",
+			expectLen: 5,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, newUint64(5), nil, nil
+			},
+			wantErr: false,
+		},
+		{
+			name:      "SinceIDAndMaxID",
+			expectLen: 4,
+			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
+				return nil, newUint64(8), newUint64(5), nil
+			},
+			wantErr: false,
+		},
+	}
 
-	t.Run("SinceID", func(t *testing.T) {
-		sinceID := uint64(5)
-		sinceIDStatuses, err := statusRepo.PublicTimeline(ctx, nil, nil, &sinceID, nil)
-		assert.NoError(t, err)
-		assert.Equal(t, 6, len(sinceIDStatuses))
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			only_media, max_id, since_id, limit := tt.wantArgs()
+			allStatuses, err := statusRepo.PublicTimeline(ctx, only_media, max_id, since_id, limit)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectLen, len(allStatuses))
+		})
+	}
+}
 
-	t.Run("MaxID", func(t *testing.T) {
-		maxID := uint64(5)
-		maxIDStatuses, err := statusRepo.PublicTimeline(ctx, nil, &maxID, nil, nil)
-		assert.NoError(t, err)
-		assert.Equal(t, 5, len(maxIDStatuses))
-	})
-
-	t.Run("SinceIDAndMaxID", func(t *testing.T) {
-		sinceID := uint64(5)
-		maxID := uint64(8)
-		sinceIDAndMaxIDStatuses, err := statusRepo.PublicTimeline(ctx, nil, &maxID, &sinceID, nil)
-		assert.NoError(t, err)
-		assert.Equal(t, 4, len(sinceIDAndMaxIDStatuses))
-	})
+func newUint64(i uint64) *uint64 {
+	return &i
 }

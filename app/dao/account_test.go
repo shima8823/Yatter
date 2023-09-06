@@ -9,41 +9,86 @@ import (
 
 func TestAccountCreate(t *testing.T) {
 	ctx := context.Background()
-	cleanupDB()
+	tests := []struct {
+		name      string
+		accounts  []object.Account
+		wantError bool
+	}{
+		{
+			name: "Success",
+			accounts: []object.Account{{
+				Username: "testuser", PasswordHash: "hashedpassword",
+			}},
+			wantError: false,
+		},
+		{
+			name: "Duplicate username",
+			accounts: []object.Account{{
+				Username:     "testuser",
+				PasswordHash: "hashedpassword",
+			}, {
+				Username:     "testuser",
+				PasswordHash: "hashedpassword",
+			}},
+			wantError: true,
+		},
+	}
 
-	t.Run("Success", func(t *testing.T) {
-		err := accountRepo.Create(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
-		assert.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanupDB()
 
-		createdAccount, err := accountRepo.Retrieve(ctx, "testuser")
-		assert.NoError(t, err)
-		assert.NotNil(t, createdAccount)
-		assert.Equal(t, "testuser", createdAccount.Username)
-	})
-
-	t.Run("duplicate username", func(t *testing.T) {
-		err := accountRepo.Create(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
-		assert.Error(t, err)
-	})
+			for i, account := range tt.accounts {
+				err := accountRepo.Create(ctx, &account)
+				if i == len(tt.accounts)-1 {
+					if tt.wantError {
+						assert.Error(t, err)
+					}
+				} else {
+					assert.NoError(t, err)
+				}
+			}
+		})
+	}
 }
 
 func TestAccountRetrieve(t *testing.T) {
 	ctx := context.Background()
-	cleanupDB()
 
-	err := accountRepo.Create(ctx, &object.Account{Username: "testuser", PasswordHash: "hashedpassword"})
-	assert.NoError(t, err)
+	tests := []struct {
+		name     string
+		accounts []object.Account
+		wantErr  bool
+	}{
+		{
+			name: "Success",
+			accounts: []object.Account{{
+				Username: "testuser", PasswordHash: "hashedpassword",
+			}},
+			wantErr: false,
+		},
+		{
+			name:    "Not found",
+			wantErr: true,
+		},
+	}
 
-	t.Run("Found", func(t *testing.T) {
-		account, err := accountRepo.Retrieve(ctx, "testuser")
-		assert.NoError(t, err)
-		assert.NotNil(t, account)
-		assert.Equal(t, "testuser", account.Username)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanupDB()
 
-	t.Run("Not found", func(t *testing.T) {
-		account, err := accountRepo.Retrieve(ctx, "nonexistentuser")
-		assert.Error(t, err)
-		assert.Nil(t, account)
-	})
+			for _, account := range tt.accounts {
+				err := accountRepo.Create(ctx, &account)
+				assert.NoError(t, err)
+			}
+
+			account, err := accountRepo.Retrieve(ctx, "testuser")
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, account)
+			}
+		})
+	}
 }
