@@ -192,7 +192,8 @@ func TestDeleteHandler(t *testing.T) {
 			mockFunc: func() {
 				mock.ExpectQuery("select \\* from status where id = \\?").
 					WithArgs(1).
-					WillReturnRows(sqlmock.NewRows([]string{"id", "account_id", "content"}))
+					WillReturnRows(sqlmock.NewRows([]string{"id", "account_id", "content"}).
+						AddRow(1, 1, "test post"))
 				mock.ExpectExec("delete from status where id = \\?").
 					WithArgs(1).
 					WillReturnResult(sqlmock.NewResult(-1, 1))
