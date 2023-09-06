@@ -123,6 +123,7 @@ func TestStatusDelete(t *testing.T) {
 
 func TestPublicTimeline(t *testing.T) {
 	ctx := context.Background()
+	cleanupDB()
 
 	for i := 1; i <= 10; i++ {
 		status := &object.Status{
@@ -137,7 +138,6 @@ func TestPublicTimeline(t *testing.T) {
 		name      string
 		expectLen int
 		wantArgs  func() (only_media, max_id, since_id, limit *uint64)
-		wantErr   bool
 	}{
 		{
 			name:      "All",
@@ -145,7 +145,6 @@ func TestPublicTimeline(t *testing.T) {
 			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
 				return nil, nil, nil, nil
 			},
-			wantErr: false,
 		},
 		{
 			name:      "Limit",
@@ -153,7 +152,6 @@ func TestPublicTimeline(t *testing.T) {
 			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
 				return nil, nil, nil, newUint64(5)
 			},
-			wantErr: true,
 		},
 		{
 			name:      "SinceID",
@@ -161,8 +159,6 @@ func TestPublicTimeline(t *testing.T) {
 			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
 				return nil, nil, newUint64(5), nil
 			},
-
-			wantErr: false,
 		},
 		{
 			name:      "MaxID",
@@ -170,7 +166,6 @@ func TestPublicTimeline(t *testing.T) {
 			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
 				return nil, newUint64(5), nil, nil
 			},
-			wantErr: false,
 		},
 		{
 			name:      "SinceIDAndMaxID",
@@ -178,7 +173,6 @@ func TestPublicTimeline(t *testing.T) {
 			wantArgs: func() (only_media, max_id, since_id, limit *uint64) {
 				return nil, newUint64(8), newUint64(5), nil
 			},
-			wantErr: false,
 		},
 	}
 
