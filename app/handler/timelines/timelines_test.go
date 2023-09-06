@@ -16,8 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// テーブル駆動テスト
-func TestGetHandler(t *testing.T) {
+func TestGetPublic(t *testing.T) {
 	db, mock := dao.NewMockDB()
 	h := newMockHandler(db)
 	defer db.Close()
@@ -29,10 +28,10 @@ func TestGetHandler(t *testing.T) {
 		wantCode int
 	}{
 		{
-			name:     "successfully get statuses",
+			name:     "Success",
 			username: "testuser",
 			mockFunc: func() {
-				mock.ExpectQuery("SELECT \\* FROM status ORDER BY create_at DESC LIMIT \\?").
+				mock.ExpectQuery("select \\* from status order by create_at desc limit \\?").
 					WithArgs(40).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "account_id", "content"}).
 						AddRow(1, 1, "test content").
@@ -43,7 +42,7 @@ func TestGetHandler(t *testing.T) {
 		{
 			name: "no timeline",
 			mockFunc: func() {
-				mock.ExpectQuery("SELECT \\* FROM status ORDER BY create_at DESC LIMIT \\?").
+				mock.ExpectQuery("select \\* from status order by create_at desc limit \\?").
 					WithArgs(40).
 					WillReturnRows(sqlmock.NewRows([]string{"id", "account_id", "content"}))
 			},

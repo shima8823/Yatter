@@ -5,7 +5,7 @@ import (
 )
 
 func buildQuery(DBName, idColumnName string, since_id, max_id, limit *uint64) (string, []interface{}) {
-	queryParts := []string{"SELECT * FROM " + DBName}
+	queryParts := []string{"select * from " + DBName}
 	var args []interface{}
 
 	if since_id != nil || max_id != nil {
@@ -21,13 +21,13 @@ func buildQuery(DBName, idColumnName string, since_id, max_id, limit *uint64) (s
 			args = append(args, *max_id)
 		}
 
-		queryParts = append(queryParts, "WHERE "+strings.Join(conditions, " AND "))
+		queryParts = append(queryParts, "where "+strings.Join(conditions, " AND "))
 	}
 
-	queryParts = append(queryParts, "ORDER BY create_at DESC")
+	queryParts = append(queryParts, "order by create_at desc")
 
 	if limit != nil {
-		queryParts = append(queryParts, "LIMIT ?")
+		queryParts = append(queryParts, "limit ?")
 		args = append(args, *limit)
 	}
 
