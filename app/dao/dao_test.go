@@ -1,10 +1,15 @@
 package dao_test
 
 import (
+	"context"
 	"log"
 	"os"
+	"strconv"
 	"testing"
+	"yatter-backend-go/app/domain/object"
 	"yatter-backend-go/app/domain/repository"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var accountRepo repository.Account
@@ -28,4 +33,29 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(m.Run())
+}
+
+func insertAccountDB(t *testing.T, ctx context.Context, accounts []object.Account) {
+	for _, account := range accounts {
+		err := accountRepo.Create(ctx, &account)
+		assert.NoError(t, err)
+	}
+}
+
+func insertRelationshipDB(t *testing.T, ctx context.Context, relationships []object.Relationship) {
+	for _, relationship := range relationships {
+		err := relationshipRepo.Create(ctx, relationship.FollowingId, relationship.FollowerId)
+		assert.NoError(t, err)
+	}
+}
+
+func createAccountObject(num int) []object.Account {
+	accounts := make([]object.Account, num)
+	for i := 0; i < num; i++ {
+		accounts[i] = object.Account{
+			Username:     "test" + strconv.Itoa(i),
+			PasswordHash: "password",
+		}
+	}
+	return accounts
 }
