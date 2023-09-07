@@ -19,7 +19,7 @@ func NewAccount(db *sqlx.DB) repository.Account {
 }
 
 func (r *account) Create(ctx context.Context, account *object.Account) error {
-	_, err := r.db.ExecContext(ctx, "insert into account (username, password_hash) values (?, ?)", account.Username, account.PasswordHash)
+	_, err := r.db.ExecContext(ctx, "insert into account (username, password_hash, display_name, avatar, header, note) values (?, ?, ?, ?, ?, ?)", account.Username, account.PasswordHash, account.DisplayName, account.Avatar, account.Header, account.Note)
 	if err != nil {
 		return err
 	}
