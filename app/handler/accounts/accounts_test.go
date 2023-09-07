@@ -37,9 +37,12 @@ func TestCreateHandler(t *testing.T) {
 				Password: "securepassword",
 			},
 			mockFunc: func() {
-				mock.ExpectExec("insert into account \\(username, password_hash\\) values \\(\\?, \\?\\)").
-					WithArgs("testuser", sqlmock.AnyArg()).
+				mock.ExpectExec("insert into account \\(username, password_hash, display_name, avatar, header, note\\) values \\(\\?, \\?, \\?, \\?, \\?, \\?\\)").
+					WithArgs("testuser", sqlmock.AnyArg(), "", "", "", "").
 					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectQuery("select \\* from account where username = \\?").
+					WithArgs("testuser").
+					WillReturnRows(sqlmock.NewRows([]string{"id", "username"}).AddRow(1, "testuser"))
 			},
 			wantCode: http.StatusOK,
 		},
