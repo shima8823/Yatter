@@ -1,2 +1,2 @@
 # Yatter
-Twitter・Mastodonライクな仮想のサービス
+Twitter・Mastodonライクな仮想のサービスのBackend API
