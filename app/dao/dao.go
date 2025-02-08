@@ -68,8 +68,9 @@ func (d *dao) InitAll() error {
 		return fmt.Errorf("Can't disable FOREIGN_KEY_CHECKS: %w", err)
 	}
 
+	// deferで再度、外部キー制約を有効化する
 	defer func() {
-		err := d.exec("SET FOREIGN_KEY_CHECKS=0") //?
+		err := d.exec("SET FOREIGN_KEY_CHECKS=1")
 		if err != nil {
 			log.Printf("Can't restore FOREIGN_KEY_CHECKS: %+v", err)
 		}
