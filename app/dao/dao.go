@@ -17,6 +17,8 @@ type (
 		Relationship() repository.Relationship
 
 		// Clear all data in DB
+		// This function is "only" used for testing
+		// Because it disables foreign key constraints after clearing all data
 		InitAll() error
 
 		// Close DB connection for testing
@@ -68,9 +70,11 @@ func (d *dao) InitAll() error {
 		return fmt.Errorf("Can't disable FOREIGN_KEY_CHECKS: %w", err)
 	}
 
-	// deferで再度、外部キー制約を有効化する
+	// テストのために無効化する。
+	// ただし、DAOのインタフェースとして提供されている以上、外部キー制約を有効化するべき。
+	// should: SET FOREIGN_KEY_CHECKS=0 -> SET FOREIGN_KEY_CHECKS=1
 	defer func() {
-		err := d.exec("SET FOREIGN_KEY_CHECKS=1")
+		err := d.exec("SET FOREIGN_KEY_CHECKS=0")
 		if err != nil {
 			log.Printf("Can't restore FOREIGN_KEY_CHECKS: %+v", err)
 		}
